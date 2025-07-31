@@ -1,0 +1,13 @@
+# Virtual environment
+.venv/
+
+# IDE configuration
+.idea/
+
+# Python cache
+__pycache__/
+*.pyo
+
+# Other
+.DS_Store
+*.log
