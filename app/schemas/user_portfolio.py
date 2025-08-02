@@ -31,7 +31,7 @@ class UserPortfolioItem(BaseModel):
     current_market_value: float
     profit_loss: float
     profit_loss_percentage: float
-    price_history: List[PriceHistoryPoint] = []
+    price_histories: List[PriceHistoryPoint] = []
 
     class Config:
         from_attributes = True
