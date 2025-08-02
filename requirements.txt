@@ -6,5 +6,5 @@ python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
 redis
-pydantic
+pydantic[email]
 pydantic-settings
