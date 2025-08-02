@@ -19,3 +19,11 @@ class AppearanceAlias(AppearanceAliasBase):
 
     class Config:
         from_attributes = True
+
+
+class AppearanceAliasSimple(BaseModel):
+    id: int
+    alias_name: str
+
+    class Config:
+        from_attributes = True

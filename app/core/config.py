@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     MAX_LOGIN_ATTEMPTS: int = 3
     LOGIN_ATTEMPT_WINDOW_MINUTES: int = 30
 
+    PRICE_HISTORY_FETCH_COUNT = 30
+
     class Config:
         env_file = ".env"
 
