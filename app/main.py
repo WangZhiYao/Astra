@@ -1,18 +1,38 @@
+import logging
+
 from fastapi import FastAPI
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from app.api import auth, user_stats, user_portfolio, appearance, appearance_type, appearance_alias, platform, user_purchase_transaction, user_sale_transaction, platform_price_history, watchlist, watchlist_item
+from app.api import auth, user_stats, user_portfolio, appearance, appearance_type, appearance_alias, platform, \
+    user_purchase_transaction, user_sale_transaction, platform_price_history, watchlist, watchlist_item
 from app.core.exceptions import BusinessException
+from app.core.logging_config import setup_logging
+from app.core.result_codes import ResultCode
+
+# Setup logging
+setup_logging()
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
 
 @app.exception_handler(BusinessException)
 async def business_exception_handler(request: Request, exc: BusinessException):
+    logger.warning(f"Business exception occurred: {exc.result_code.message}", exc_info=True)
     return JSONResponse(
         status_code=exc.result_code.status_code,
         content={"code": exc.result_code.code, "message": exc.result_code.message},
+    )
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    logger.error("An unexpected error occurred", exc_info=True)
+    return JSONResponse(
+        status_code=ResultCode.INTERNAL_SERVER_ERROR.status_code,
+        content={"code": ResultCode.INTERNAL_SERVER_ERROR.code,
+                   "message": ResultCode.INTERNAL_SERVER_ERROR.message},
     )
 
 

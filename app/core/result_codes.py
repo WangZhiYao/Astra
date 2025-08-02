@@ -35,6 +35,7 @@ class ResultCode(Enum):
     # Common Errors (9000-9099)
     FORBIDDEN = (9000, "Permission denied", 403)
     NOT_FOUND = (9001, "Resource not found", 404)
+    INTERNAL_SERVER_ERROR = (9999, "Internal server error", 500)
 
     def __init__(self, code, message, status_code):
         self.code = code
