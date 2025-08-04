@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
-from app.schemas import Appearance, AppearanceType, AppearanceAliasSimple
+from app.schemas import Appearance
 
 
 class PriceHistoryPoint(BaseModel):
@@ -15,16 +15,8 @@ class PriceHistoryPoint(BaseModel):
         from_attributes = True
 
 
-class PortfolioAppearance(Appearance):
-    appearance_types: List[AppearanceType] = []
-    appearance_aliases: List[AppearanceAliasSimple] = []
-
-    class Config:
-        from_attributes = True
-
-
 class UserPortfolioItem(BaseModel):
-    appearance: PortfolioAppearance
+    appearance: Appearance
     quantity: int
     average_cost: float
     total_investment: float

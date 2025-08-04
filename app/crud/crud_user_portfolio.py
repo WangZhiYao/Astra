@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.config import settings
 from app.models import UserPurchaseTransaction, UserSaleTransaction, Appearance, PlatformPriceHistory
-from app.schemas import UserPortfolio, UserPortfolioItem, PriceHistoryPoint, PortfolioAppearance
+from app.schemas import UserPortfolio, UserPortfolioItem, PriceHistoryPoint, Appearance
 
 
 def get_user_portfolio(db: Session, user_id: int, page: int, page_size: int,
@@ -123,18 +123,18 @@ def get_user_portfolio(db: Session, user_id: int, page: int, page_size: int,
         # 安全的百分比计算
         profit_loss_percentage = (pl / total_inv * 100) if total_inv and total_inv > 0 else 0
 
-        portfolio_appearance = PortfolioAppearance.model_validate(appearance)
+        appearance = Appearance.model_validate(appearance)
 
         items.append(
             UserPortfolioItem(
-                appearance=portfolio_appearance,
+                appearance=appearance,
                 quantity=qty or 0,
                 average_cost=avg_cost or 0,
                 total_investment=total_inv or 0,
                 current_market_value=current_mv or 0,
                 profit_loss=pl or 0,
                 profit_loss_percentage=profit_loss_percentage,
-                price_history=price_histories_map.get(appearance.id, []),
+                price_histories=price_histories_map.get(appearance.id, []),
             )
         )
 
@@ -149,7 +149,10 @@ def _get_price_histories_batch(db: Session, appearance_ids: List[int],
 
     price_history_subquery = (
         db.query(
-            PlatformPriceHistory,
+            PlatformPriceHistory.appearance_id,
+            PlatformPriceHistory.lowest_price_cents,
+            PlatformPriceHistory.quantity_on_sale,
+            PlatformPriceHistory.crawled_at,
             func.row_number().over(
                 partition_by=PlatformPriceHistory.appearance_id,
                 order_by=PlatformPriceHistory.crawled_at.desc()
