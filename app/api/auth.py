@@ -11,16 +11,15 @@ from app.core.security import verify_password
 from app.crud import crud_user
 from app.db.database import get_db
 from app.db.redis import redis_client
-from app.schemas import user as user_schema, token as token_schema
-from app.schemas.token import TokenRefreshRequest
+from app.schemas import Token, UserCreate, UserLogin, TokenRefreshRequest
 from app.services import jwt_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=Response[token_schema.Token])
-def register(user: user_schema.UserCreate, db: Session = Depends(get_db)):
+@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=Response[Token])
+def register(user: UserCreate, db: Session = Depends(get_db)):
     logger.info(f"Registering user with email: {user.email}")
     db_user = crud_user.get_user_by_email(db, email=str(user.email))
     if db_user:
@@ -33,13 +32,11 @@ def register(user: user_schema.UserCreate, db: Session = Depends(get_db)):
     access_token = jwt_service.create_access_token(data={"sub": new_user.email})
     refresh_token = jwt_service.create_refresh_token(data={"sub": new_user.email})
 
-    return Response(
-        data=token_schema.Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
-    )
+    return Response(data=Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer"))
 
 
-@router.post("/login", response_model=Response[token_schema.Token])
-def login(user: user_schema.UserLogin, db: Session = Depends(get_db)):
+@router.post("/login", response_model=Response[Token])
+def login(user: UserLogin, db: Session = Depends(get_db)):
     logger.info(f"Login attempt for user: {user.email}")
     db_user = crud_user.get_user_by_email(db, email=str(user.email))
     if db_user:
@@ -71,18 +68,16 @@ def login(user: user_schema.UserLogin, db: Session = Depends(get_db)):
     access_token = jwt_service.create_access_token(data={"sub": db_user.email})
     refresh_token = jwt_service.create_refresh_token(data={"sub": db_user.email})
 
-    return Response(
-        data=token_schema.Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
-    )
+    return Response(data=Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer"))
 
 
-@router.post("/refresh", response_model=Response[token_schema.Token])
+@router.post("/refresh", response_model=Response[Token])
 def refresh_token(request: TokenRefreshRequest, db: Session = Depends(get_db)):
     logger.info("Attempting to refresh token.")
     email = jwt_service.verify_token(request.refresh_token)
 
     # Check if refresh token is valid (exists in Redis)
-    stored_token = jwt_service.redis_client.get(f"refresh_token:{email}")
+    stored_token = redis_client.get(f"refresh_token:{email}")
     if not stored_token or stored_token.decode('utf-8') != request.refresh_token:
         logger.warning(f"Invalid refresh token for email: {email}")
         raise BusinessException(ResultCode.INVALID_REFRESH_TOKEN)
@@ -96,6 +91,4 @@ def refresh_token(request: TokenRefreshRequest, db: Session = Depends(get_db)):
     new_refresh_token = jwt_service.create_refresh_token(data={"sub": user.email})
     logger.info(f"Token refreshed successfully for user: {user.email}")
 
-    return Response(
-        data=token_schema.Token(access_token=access_token, refresh_token=new_refresh_token, token_type="bearer")
-    )
+    return Response(data=Token(access_token=access_token, refresh_token=new_refresh_token, token_type="bearer"))
