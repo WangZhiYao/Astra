@@ -2,6 +2,7 @@ from .appearance import Appearance, AppearanceCreate
 from .appearance_alias import AppearanceAlias, AppearanceAliasCreate, AppearanceAliasSimple
 from .appearance_type import AppearanceType, AppearanceTypeCreate
 from .platform import Platform, PlatformCreate
+from .appearance import Appearance, AppearanceCreate, AppearanceUpdate
 from .platform_appearance_relation import PlatformAppearanceRelation, PlatformAppearanceRelationCreate
 from .platform_price_history import PlatformPriceHistory, PlatformPriceHistoryCreate
 from .token import Token, TokenRefreshRequest
@@ -17,6 +18,7 @@ __all__ = [
     # Appearance
     "Appearance",
     "AppearanceCreate",
+    "AppearanceUpdate",
     "AppearanceAlias",
     "AppearanceAliasCreate",
     "AppearanceAliasSimple",

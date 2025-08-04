@@ -18,7 +18,8 @@ CREATE TABLE appearances
     description TEXT,
     image_url   VARCHAR(255),
     created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (name)
 );
 
 CREATE TABLE appearance_type_relations
@@ -102,7 +103,6 @@ CREATE TABLE user_sale_transactions
     quantity           INTEGER     NOT NULL CHECK (quantity > 0),
     unit_price_cents   BIGINT      NOT NULL,
     platform_fee_cents BIGINT      NOT NULL DEFAULT 0,
-    net_amount_cents   BIGINT      NOT NULL,
     sold_at            TIMESTAMPTZ NOT NULL,
     notes              TEXT,
     created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
