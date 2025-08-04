@@ -26,6 +26,7 @@ def create_appearance(db: Session, appearance: AppearanceCreate):
     db.add(db_appearance)
     db.commit()
     db.refresh(db_appearance)
+
     return OperationResult(status=OperationStatus.SUCCESS, data=db_appearance)
 
 
@@ -59,20 +60,22 @@ def get_appearances(
 
 def update_appearance(db: Session, appearance_id: int, appearance: AppearanceUpdate) -> OperationResult:
     db_appearance = db.query(Appearance).filter(Appearance.id == appearance_id).first()
-    if db_appearance:
-        update_data = appearance.model_dump(exclude_unset=True)
-        if "name" in update_data and update_data["name"] != db_appearance.name:
-            existing_appearance = _get_appearance_by_name(db, name=update_data["name"])
-            if existing_appearance:
-                return OperationResult(status=OperationStatus.CONFLICT, data=existing_appearance)
+    if not db_appearance:
+        return OperationResult(status=OperationStatus.NOT_FOUND)
 
-        for key, value in update_data.items():
-            setattr(db_appearance, key, value)
-        db.add(db_appearance)
-        db.commit()
-        db.refresh(db_appearance)
-        return OperationResult(status=OperationStatus.SUCCESS, data=db_appearance)
-    return OperationResult(status=OperationStatus.NOT_FOUND)
+    update_data = appearance.model_dump(exclude_unset=True)
+    if "name" in update_data and update_data["name"] != db_appearance.name:
+        existing_appearance = _get_appearance_by_name(db, name=update_data["name"])
+        if existing_appearance:
+            return OperationResult(status=OperationStatus.CONFLICT, data=existing_appearance)
+
+    for key, value in update_data.items():
+        setattr(db_appearance, key, value)
+    db.add(db_appearance)
+    db.commit()
+    db.refresh(db_appearance)
+
+    return OperationResult(status=OperationStatus.SUCCESS, data=db_appearance)
 
 
 def delete_appearance(db: Session, appearance_id: int):

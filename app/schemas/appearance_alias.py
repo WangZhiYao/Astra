@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -10,6 +11,10 @@ class AppearanceAliasBase(BaseModel):
 
 class AppearanceAliasCreate(AppearanceAliasBase):
     pass
+
+
+class AppearanceAliasUpdate(BaseModel):
+    alias_name: Optional[str] = None
 
 
 class AppearanceAlias(AppearanceAliasBase):
