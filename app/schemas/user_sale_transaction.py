@@ -18,6 +18,15 @@ class UserSaleTransactionCreate(UserSaleTransactionBase):
     pass
 
 
+class UserSaleTransactionUpdate(BaseModel):
+    platform_id: Optional[int] = None
+    quantity: Optional[int] = None
+    unit_price_cents: Optional[int] = None
+    platform_fee_cents: Optional[int] = None
+    sold_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+
 class UserSaleTransaction(UserSaleTransactionBase):
     id: int
     user_id: int

@@ -7,8 +7,9 @@ from .platform_price_history import PlatformPriceHistory, PlatformPriceHistoryCr
 from .token import Token, TokenRefreshRequest
 from .user import UserCreate, UserLogin
 from .user_portfolio import PortfolioAppearance, PriceHistoryPoint, UserPortfolio, UserPortfolioItem
-from .user_purchase_transaction import UserPurchaseTransaction, UserPurchaseTransactionCreate
-from .user_sale_transaction import UserSaleTransaction, UserSaleTransactionCreate
+from .user_purchase_transaction import UserPurchaseTransaction, UserPurchaseTransactionCreate, \
+    UserPurchaseTransactionUpdate
+from .user_sale_transaction import UserSaleTransaction, UserSaleTransactionCreate, UserSaleTransactionUpdate
 from .user_stats import UserStats
 from .watchlist import Watchlist, WatchlistCreate
 from .watchlist_item import WatchlistItem, WatchlistItemCreate
@@ -53,8 +54,10 @@ __all__ = [
     # Transactions
     "UserPurchaseTransaction",
     "UserPurchaseTransactionCreate",
+    "UserPurchaseTransactionUpdate",
     "UserSaleTransaction",
     "UserSaleTransactionCreate",
+    "UserSaleTransactionUpdate",
 
     # Watchlist
     "Watchlist",

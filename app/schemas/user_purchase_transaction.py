@@ -17,6 +17,14 @@ class UserPurchaseTransactionCreate(UserPurchaseTransactionBase):
     pass
 
 
+class UserPurchaseTransactionUpdate(BaseModel):
+    platform_id: Optional[int] = None
+    quantity: Optional[int] = None
+    unit_price_cents: Optional[int] = None
+    purchased_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+
 class UserPurchaseTransaction(UserPurchaseTransactionBase):
     id: int
     user_id: int
