@@ -2,7 +2,8 @@ from typing import Optional, List
 
 from pydantic import BaseModel
 
-from app.schemas import AppearanceAliasSimple, AppearanceType
+from .appearance_alias import AppearanceAliasSimple
+from .appearance_type import AppearanceType
 
 
 class AppearanceCreate(BaseModel):
