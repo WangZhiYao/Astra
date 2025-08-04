@@ -49,7 +49,7 @@ def update_appearance_alias(
     return Response(data=operation_result.data)
 
 
-@router.delete("/{alias_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=Response)
+@router.delete("/{alias_id}", response_model=Response)
 def delete_appearance_alias(
         alias_id: int,
         db: Session = Depends(get_db),
@@ -58,4 +58,4 @@ def delete_appearance_alias(
     db_appearance_alias = crud_appearance_alias.delete_appearance_alias(db, alias_id=alias_id)
     if db_appearance_alias is None:
         raise BusinessException(ResultCode.NOT_FOUND)
-    return Response(code=204, message="Appearance alias deleted successfully")
+    return Response(message="Appearance alias deleted successfully")
