@@ -70,7 +70,7 @@ def update_appearance(
     return Response(data=operation_result.data)
 
 
-@router.delete("/{appearance_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=Response)
+@router.delete("/{appearance_id}", response_model=Response)
 def delete_appearance(
         appearance_id: int,
         db: Session = Depends(get_db),
@@ -79,4 +79,4 @@ def delete_appearance(
     db_appearance = crud_appearance.delete_appearance(db, appearance_id=appearance_id)
     if db_appearance is None:
         raise BusinessException(ResultCode.NOT_FOUND)
-    return Response(code=204, message="Appearance deleted successfully")
+    return Response(message="Appearance deleted successfully")
