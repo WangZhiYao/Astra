@@ -14,6 +14,6 @@ class OperationStatus(str, Enum):
     INVALID = "invalid"
 
 
-class OperationResult(Generic[T], BaseModel):
+class OperationResult(BaseModel, Generic[T]):
     status: OperationStatus
     data: Optional[T] = None
