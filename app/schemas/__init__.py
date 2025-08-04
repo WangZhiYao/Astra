@@ -11,7 +11,7 @@ from .user_purchase_transaction import UserPurchaseTransaction, UserPurchaseTran
     UserPurchaseTransactionUpdate
 from .user_sale_transaction import UserSaleTransaction, UserSaleTransactionCreate, UserSaleTransactionUpdate
 from .user_stats import UserStats
-from .watchlist import Watchlist, WatchlistCreate
+from .watchlist import Watchlist, WatchlistCreate, WatchlistUpdate
 from .watchlist_item import WatchlistItem, WatchlistItemCreate
 
 __all__ = [
@@ -62,6 +62,7 @@ __all__ = [
     # Watchlist
     "Watchlist",
     "WatchlistCreate",
+    "WatchlistUpdate",
     "WatchlistItem",
     "WatchlistItemCreate",
 ]
