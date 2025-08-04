@@ -43,7 +43,7 @@ def get_platform_price_histories(
     return Response(data=histories)
 
 
-@router.delete("/{history_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=Response)
+@router.delete("/{history_id}", response_model=Response)
 def delete_platform_price_history(
         history_id: int,
         db: Session = Depends(get_db),
@@ -52,4 +52,4 @@ def delete_platform_price_history(
     db_history = crud_platform_price_history.delete_platform_price_history(db, history_id=history_id)
     if db_history is None:
         raise BusinessException(ResultCode.NOT_FOUND)
-    return Response(code=204, message="Platform price history deleted successfully")
+    return Response(message="Platform price history deleted successfully")
