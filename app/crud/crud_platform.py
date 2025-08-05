@@ -2,39 +2,44 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
+import app.models as models
+import app.schemas as schemas
 from app.core.operation_result import OperationResult, OperationStatus
-from app.models import Platform
-from app.schemas import PlatformCreate, PlatformUpdate
-
-
-def get_platform_by_id(db: Session, platform_id: int):
-    return db.query(Platform).filter(Platform.id == platform_id).first()
 
 
 def _get_platform_by_name(db: Session, name: str):
-    return db.query(Platform).filter(Platform.name == name).first()
+    return db.query(models.Platform).filter(models.Platform.name == name).first()
 
 
-def create_platform(db: Session, platform: PlatformCreate):
-    db_platform = _get_platform_by_name(db, name=platform.name)
+def create_platform(db: Session, platform: schemas.PlatformCreate) -> OperationResult[schemas.Platform]:
+    db_platform = _get_platform_by_name(db=db, name=platform.name)
     if db_platform:
-        return OperationResult(status=OperationStatus.CONFLICT, data=db_platform)
+        return OperationResult(status=OperationStatus.CONFLICT, data=schemas.Platform.model_validate(db_platform))
 
-    db_platform = Platform(name=platform.name)
+    db_platform = models.Platform(name=platform.name)
     db.add(db_platform)
     db.commit()
     db.refresh(db_platform)
 
-    return OperationResult(status=OperationStatus.SUCCESS, data=db_platform)
+    return OperationResult(status=OperationStatus.SUCCESS, data=schemas.Platform.model_validate(db_platform))
 
 
-def get_platforms(db: Session, page: int = 1, page_size: int = 100) -> List[Platform]:
+def get_platform_by_id(db: Session, platform_id: int):
+    return db.query(models.Platform).filter(models.Platform.id == platform_id).first()
+
+
+def get_platforms(db: Session, page: int = 1, page_size: int = 100) -> List[schemas.Platform]:
     offset = (page - 1) * page_size
-    return db.query(Platform).offset(offset).limit(page_size).all()
+    db_platforms = db.query(models.Platform).offset(offset).limit(page_size).all()
+    return [schemas.Platform.model_validate(db_platform) for db_platform in db_platforms]
 
 
-def update_platform(db: Session, platform_id: int, platform: PlatformUpdate) -> OperationResult[Platform]:
-    db_platform = db.query(Platform).filter(Platform.id == platform_id).first()
+def update_platform(
+        db: Session,
+        platform_id: int,
+        platform: schemas.PlatformUpdate
+) -> OperationResult[schemas.Platform]:
+    db_platform = get_platform_by_id(db=db, platform_id=platform_id)
     if not db_platform:
         return OperationResult(status=OperationStatus.NOT_FOUND)
 
@@ -42,7 +47,10 @@ def update_platform(db: Session, platform_id: int, platform: PlatformUpdate) -> 
     if "name" in update_data and update_data["name"] != db_platform.name:
         existing_platform = _get_platform_by_name(db, name=update_data["name"])
         if existing_platform:
-            return OperationResult(status=OperationStatus.CONFLICT, data=existing_platform)
+            return OperationResult(
+                status=OperationStatus.CONFLICT,
+                data=schemas.Platform.model_validate(existing_platform)
+            )
 
     for key, value in update_data.items():
         setattr(db_platform, key, value)
@@ -50,12 +58,15 @@ def update_platform(db: Session, platform_id: int, platform: PlatformUpdate) -> 
     db.commit()
     db.refresh(db_platform)
 
-    return OperationResult(status=OperationStatus.SUCCESS, data=db_platform)
+    return OperationResult(status=OperationStatus.SUCCESS, data=schemas.Platform.model_validate(db_platform))
 
 
 def delete_platform(db: Session, platform_id: int):
-    db_platform = db.query(Platform).filter(Platform.id == platform_id).first()
-    if db_platform:
-        db.delete(db_platform)
-        db.commit()
-    return db_platform
+    db_platform = get_platform_by_id(db=db, platform_id=platform_id)
+    if not db_platform:
+        return OperationResult(status=OperationStatus.NOT_FOUND)
+
+    db.delete(db_platform)
+    db.commit()
+
+    return OperationResult(status=OperationStatus.SUCCESS, data=schemas.Platform.model_validate(db_platform))
