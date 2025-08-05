@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class AppearanceAliasBase(BaseModel):
@@ -27,8 +27,7 @@ class AppearanceAlias(AppearanceAliasBase):
 
 
 class AppearanceAliasSimple(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     alias_name: str
-
-    class Config:
-        from_attributes = True
