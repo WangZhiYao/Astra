@@ -3,21 +3,21 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import joinedload
 
+import app.models as models
+import app.schemas as schemas
 from app.core.operation_result import OperationResult, OperationStatus
-from app.models import Appearance, AppearanceAlias
-from app.schemas import AppearanceCreate, AppearanceUpdate
 
 
-def _get_appearance_by_name(db: Session, name: str) -> Optional[Appearance]:
-    return db.query(Appearance).filter(Appearance.name == name).first()
+def _get_appearance_by_name(db: Session, name: str) -> Optional[models.Appearance]:
+    return db.query(models.Appearance).filter(models.Appearance.name == name).first()
 
 
-def create_appearance(db: Session, appearance: AppearanceCreate):
+def create_appearance(db: Session, appearance: schemas.AppearanceCreate):
     db_appearance = _get_appearance_by_name(db=db, name=appearance.name)
     if db_appearance:
         return OperationResult(status=OperationStatus.CONFLICT, data=db_appearance)
 
-    db_appearance = Appearance(
+    db_appearance = models.Appearance(
         name=appearance.name,
         description=appearance.description,
         image_url=appearance.image_url
@@ -27,14 +27,19 @@ def create_appearance(db: Session, appearance: AppearanceCreate):
     db.commit()
     db.refresh(db_appearance)
 
-    return OperationResult(status=OperationStatus.SUCCESS, data=db_appearance)
+    return OperationResult(status=OperationStatus.SUCCESS, data=schemas.Appearance.model_validate(db_appearance))
 
 
 def get_appearance_by_id(db: Session, appearance_id: int):
-    return db.query(Appearance).options(
-        joinedload(Appearance.appearance_aliases),
-        joinedload(Appearance.appearance_types)
-    ).filter(Appearance.id == appearance_id).first()
+    db_appearance = db.query(models.Appearance).options(
+        joinedload(models.Appearance.appearance_aliases),
+        joinedload(models.Appearance.appearance_types)
+    ).filter(models.Appearance.id == appearance_id).first()
+
+    if not db_appearance:
+        return OperationResult(status=OperationStatus.NOT_FOUND)
+
+    return OperationResult(status=OperationStatus.SUCCESS, data=schemas.Appearance.model_validate(db_appearance))
 
 
 def get_appearances(
@@ -42,24 +47,28 @@ def get_appearances(
         page: int = 1,
         page_size: int = 100,
         search_query: Optional[str] = None
-) -> List[Appearance]:
-    query = db.query(Appearance).options(
-        joinedload(Appearance.appearance_aliases),
-        joinedload(Appearance.appearance_types)
+) -> List[schemas.Appearance]:
+    query = db.query(models.Appearance).options(
+        joinedload(models.Appearance.appearance_aliases),
+        joinedload(models.Appearance.appearance_types)
     )
 
     if search_query:
-        query = query.outerjoin(Appearance.appearance_aliases).filter(
-            (Appearance.name.ilike(f"%{search_query}%")) |
-            (Appearance.appearance_aliases.any(AppearanceAlias.alias_name.ilike(f"%{search_query}%")))
+        query = query.outerjoin(models.Appearance.appearance_aliases).filter(
+            (models.Appearance.name.ilike(f"%{search_query}%")) |
+            (models.Appearance.appearance_aliases.any(models.AppearanceAlias.alias_name.ilike(f"%{search_query}%")))
         )
 
     offset = (page - 1) * page_size
     return query.offset(offset).limit(page_size).all()
 
 
-def update_appearance(db: Session, appearance_id: int, appearance: AppearanceUpdate) -> OperationResult:
-    db_appearance = db.query(Appearance).filter(Appearance.id == appearance_id).first()
+def update_appearance(
+        db: Session,
+        appearance_id: int,
+        appearance: schemas.AppearanceUpdate
+) -> OperationResult[schemas.Appearance]:
+    db_appearance = db.query(models.Appearance).filter(models.Appearance.id == appearance_id).first()
     if not db_appearance:
         return OperationResult(status=OperationStatus.NOT_FOUND)
 
@@ -79,7 +88,7 @@ def update_appearance(db: Session, appearance_id: int, appearance: AppearanceUpd
 
 
 def delete_appearance(db: Session, appearance_id: int):
-    db_appearance = db.query(Appearance).filter(Appearance.id == appearance_id).first()
+    db_appearance = db.query(models.Appearance).filter(models.Appearance.id == appearance_id).first()
     if db_appearance:
         db.delete(db_appearance)
         db.commit()

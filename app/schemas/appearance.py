@@ -1,6 +1,6 @@
 from typing import Optional, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from .appearance_alias import AppearanceAliasSimple
 from .appearance_type import AppearanceType
@@ -19,12 +19,11 @@ class AppearanceUpdate(BaseModel):
 
 
 class Appearance(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     description: Optional[str] = None
     image_url: Optional[str] = None
     appearance_aliases: List[AppearanceAliasSimple] = None
     appearance_types: List[AppearanceType] = None
-
-    class Config:
-        from_attributes = True
