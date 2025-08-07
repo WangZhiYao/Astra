@@ -12,12 +12,21 @@ def _get_appearance_alias_by_alias_name(db: Session, appearance_id: int, alias_n
     ).first()
 
 
-def create_appearance_alias(db: Session, appearance_alias: schemas.AppearanceAliasCreate):
-    db_appearance_alias = _get_appearance_alias_by_alias_name(db=db,
-                                                              appearance_id=appearance_alias.appearance_id,
-                                                              alias_name=appearance_alias.alias_name)
+def create_appearance_alias(
+        db: Session,
+        appearance_alias: schemas.AppearanceAliasCreate
+) -> OperationResult[schemas.AppearanceAlias]:
+    db_appearance_alias = _get_appearance_alias_by_alias_name(
+        db=db,
+        appearance_id=appearance_alias.appearance_id,
+        alias_name=appearance_alias.alias_name
+    )
+
     if db_appearance_alias:
-        return OperationResult(status=OperationStatus.CONFLICT, data=db_appearance_alias)
+        return OperationResult(
+            status=OperationStatus.CONFLICT,
+            data=schemas.AppearanceAlias.model_validate(db_appearance_alias)
+        )
 
     db_appearance_alias = models.AppearanceAlias(
         appearance_id=appearance_alias.appearance_id,
@@ -27,7 +36,10 @@ def create_appearance_alias(db: Session, appearance_alias: schemas.AppearanceAli
     db.commit()
     db.refresh(db_appearance_alias)
 
-    return OperationResult(status=OperationStatus.SUCCESS, data=db_appearance_alias)
+    return OperationResult(
+        status=OperationStatus.SUCCESS,
+        data=schemas.AppearanceAlias.model_validate(db_appearance_alias)
+    )
 
 
 def update_appearance_alias(
@@ -47,7 +59,10 @@ def update_appearance_alias(
             alias_name=update_data["alias_name"]
         )
         if existing_alias:
-            return OperationResult(status=OperationStatus.CONFLICT, data=existing_alias)
+            return OperationResult(
+                status=OperationStatus.CONFLICT,
+                data=schemas.AppearanceAlias.model_validate(existing_alias)
+            )
 
     for key, value in update_data.items():
         setattr(db_appearance_alias, key, value)
@@ -61,7 +76,7 @@ def update_appearance_alias(
     )
 
 
-def delete_appearance_alias(db: Session, alias_id: int) -> OperationResult[schemas.AppearanceAlias]:
+def delete_appearance_alias(db: Session, alias_id: int) -> OperationResult:
     db_appearance_alias = db.query(models.AppearanceAlias).filter(models.AppearanceAlias.id == alias_id).first()
     if not db_appearance_alias:
         return OperationResult(status=OperationStatus.NOT_FOUND)
@@ -69,7 +84,4 @@ def delete_appearance_alias(db: Session, alias_id: int) -> OperationResult[schem
     db.delete(db_appearance_alias)
     db.commit()
 
-    return OperationResult(
-        status=OperationStatus.SUCCESS,
-        data=schemas.AppearanceAlias.model_validate(db_appearance_alias)
-    )
+    return OperationResult(status=OperationStatus.SUCCESS)
