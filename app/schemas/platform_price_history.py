@@ -3,6 +3,8 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
+from .platform import Platform
+
 
 class PlatformPriceHistoryBase(BaseModel):
     appearance_id: int
@@ -20,3 +22,12 @@ class PlatformPriceHistory(PlatformPriceHistoryBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+
+
+class PlatformPriceHistoryPoint(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    platform: Platform
+    lowest_price_cents: float
+    quantity_on_sale: Optional[int] = None
+    crawled_at: datetime

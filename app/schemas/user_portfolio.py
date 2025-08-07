@@ -1,21 +1,14 @@
-from datetime import datetime
-from typing import List, Optional
+from typing import List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from app.schemas import Appearance
-
-
-class PriceHistoryPoint(BaseModel):
-    price: float
-    quantity_on_sale: Optional[int] = None
-    crawled_at: datetime
-
-    class Config:
-        from_attributes = True
+from .appearance import Appearance
+from .platform_price_history import PlatformPriceHistoryPoint
 
 
 class UserPortfolioItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     appearance: Appearance
     quantity: int
     average_cost: float
@@ -23,10 +16,7 @@ class UserPortfolioItem(BaseModel):
     current_market_value: float
     profit_loss: float
     profit_loss_percentage: float
-    price_histories: List[PriceHistoryPoint] = []
-
-    class Config:
-        from_attributes = True
+    price_histories: List[PlatformPriceHistoryPoint] = []
 
 
 class UserPortfolio(BaseModel):

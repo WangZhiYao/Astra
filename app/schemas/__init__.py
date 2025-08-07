@@ -3,10 +3,10 @@ from .appearance_alias import AppearanceAlias, AppearanceAliasCreate, Appearance
 from .appearance_type import AppearanceType, AppearanceTypeCreate, AppearanceTypeUpdate
 from .platform import Platform, PlatformCreate, PlatformUpdate
 from .platform_appearance_relation import PlatformAppearanceRelation, PlatformAppearanceRelationCreate
-from .platform_price_history import PlatformPriceHistory, PlatformPriceHistoryCreate
+from .platform_price_history import PlatformPriceHistory, PlatformPriceHistoryCreate, PlatformPriceHistoryPoint
 from .token import Token, TokenRefreshRequest
 from .user import UserCreate, UserLogin
-from .user_portfolio import PriceHistoryPoint, UserPortfolio, UserPortfolioItem
+from .user_portfolio import UserPortfolio, UserPortfolioItem
 from .user_purchase_transaction import UserPurchaseTransaction, UserPurchaseTransactionCreate, \
     UserPurchaseTransactionUpdate
 from .user_sale_transaction import UserSaleTransaction, UserSaleTransactionCreate, UserSaleTransactionUpdate
@@ -35,6 +35,7 @@ __all__ = [
     "PlatformAppearanceRelationCreate",
     "PlatformPriceHistory",
     "PlatformPriceHistoryCreate",
+    "PlatformPriceHistoryPoint",
 
     # Token / Auth
     "Token",
@@ -46,7 +47,6 @@ __all__ = [
     "UserStats",
 
     # Portfolio
-    "PriceHistoryPoint",
     "UserPortfolio",
     "UserPortfolioItem",
 
