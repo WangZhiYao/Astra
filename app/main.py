@@ -1,4 +1,5 @@
 import logging
+import time
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -16,6 +17,24 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+
+    # Log request details
+    logger.info(f"Request: {request.method} {request.url.path} - From: {request.client.host}")
+
+    response = await call_next(request)
+
+    # Log response details
+    process_time = (time.time() - start_time) * 1000
+    logger.info(
+        f"Response: {response.status_code} - Process Time: {process_time:.2f}ms"
+    )
+
+    return response
 
 
 @app.exception_handler(BusinessException)
