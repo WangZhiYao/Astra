@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.dependencies import require_admin
 from app.core.exceptions import BusinessException
+from app.core.operation_result import OperationStatus
 from app.core.response import Response
 from app.core.result_codes import ResultCode
 from app.crud import crud_platform_price_history
@@ -33,23 +34,26 @@ def get_platform_price_histories(
         appearance_id: Optional[int] = None,
         db: Session = Depends(get_db)
 ):
-    histories = crud_platform_price_history.get_platform_price_histories(
+    platform_price_histories = crud_platform_price_history.get_platform_price_histories(
         db,
         page=page,
         page_size=page_size,
         platform_id=platform_id,
         appearance_id=appearance_id
     )
-    return Response(data=histories)
+    return Response(data=platform_price_histories)
 
 
-@router.delete("/{history_id}", response_model=Response)
+@router.delete("/{platform_price_history_id}", response_model=Response)
 def delete_platform_price_history(
-        history_id: int,
+        platform_price_history_id: int,
         db: Session = Depends(get_db),
         _: User = Depends(require_admin)
 ):
-    db_history = crud_platform_price_history.delete_platform_price_history(db, history_id=history_id)
-    if db_history is None:
+    operation_result = crud_platform_price_history.delete_platform_price_history(
+        db=db,
+        platform_price_history_id=platform_price_history_id
+    )
+    if operation_result.status == OperationStatus.NOT_FOUND:
         raise BusinessException(ResultCode.NOT_FOUND)
     return Response(message="Platform price history deleted successfully")

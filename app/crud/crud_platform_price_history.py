@@ -2,13 +2,14 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from app.models import PlatformPriceHistory
-from app.schemas import PlatformPriceHistoryCreate
+import app.models as models
+import app.schemas as schemas
+from app.core.operation_result import OperationResult, OperationStatus
 
 
-def create_platform_price_histories(db: Session, histories: List[PlatformPriceHistoryCreate]):
+def create_platform_price_histories(db: Session, histories: List[schemas.PlatformPriceHistoryCreate]):
     history_dicts = [history.model_dump() for history in histories]
-    db.bulk_insert_mappings(PlatformPriceHistory, history_dicts)
+    db.bulk_insert_mappings(models.PlatformPriceHistory, history_dicts)
     db.commit()
     return len(history_dicts)
 
@@ -19,21 +20,30 @@ def get_platform_price_histories(
         page_size: int = 100,
         platform_id: Optional[int] = None,
         appearance_id: Optional[int] = None
-) -> List[PlatformPriceHistory]:
-    query = db.query(PlatformPriceHistory)
+) -> List[schemas.PlatformPriceHistory]:
+    query = db.query(models.PlatformPriceHistory)
 
     if platform_id:
-        query = query.filter(PlatformPriceHistory.platform_id == platform_id)
+        query = query.filter(models.PlatformPriceHistory.platform_id == platform_id)
     if appearance_id:
-        query = query.filter(PlatformPriceHistory.appearance_id == appearance_id)
+        query = query.filter(models.PlatformPriceHistory.appearance_id == appearance_id)
 
     offset = (page - 1) * page_size
-    return query.offset(offset).limit(page_size).all()
+    db_platform_price_histories = query.offset(offset).limit(page_size).all()
+    return [schemas.PlatformPriceHistory.model_validate(db_platform_price_history) for db_platform_price_history in
+            db_platform_price_histories]
 
 
-def delete_platform_price_history(db: Session, history_id: int):
-    db_history = db.query(PlatformPriceHistory).filter(PlatformPriceHistory.id == history_id).first()
-    if db_history:
-        db.delete(db_history)
-        db.commit()
-    return db_history
+def delete_platform_price_history(db: Session, platform_price_history_id: int):
+    db_platform_price_history = db.query(models.PlatformPriceHistory).filter(
+        models.PlatformPriceHistory.id == history_id).first()
+    if not db_platform_price_history:
+        return OperationResult(status=OperationStatus.NOT_FOUND)
+
+    db.delete(db_platform_price_history)
+    db.commit()
+
+    return OperationResult(
+        status=OperationStatus.SUCCESS,
+        data=schemas.PlatformPriceHistory.model_validate(db_platform_price_history)
+    )
