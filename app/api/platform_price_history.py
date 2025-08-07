@@ -1,4 +1,5 @@
 from typing import List, Optional
+import logging
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
@@ -14,15 +15,18 @@ from app.models import User
 from app.schemas import PlatformPriceHistoryCreate, PlatformPriceHistory
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_platform_price_histories(
         histories: List[PlatformPriceHistoryCreate],
         db: Session = Depends(get_db),
-        _: User = Depends(require_admin)
+        current_user: User = Depends(require_admin)
 ):
+    logger.info(f"User {current_user.email} is creating {len(histories)} new platform price histories.")
     count = crud_platform_price_history.create_platform_price_histories(db=db, histories=histories)
+    logger.info(f"Successfully created {count} platform price histories.")
     return Response(message=f"Successfully created {count} platform price histories.")
 
 
@@ -34,6 +38,7 @@ def get_platform_price_histories(
         appearance_id: Optional[int] = None,
         db: Session = Depends(get_db)
 ):
+    logger.info(f"Fetching platform price histories with page: {page}, page_size: {page_size}, platform_id: {platform_id}, appearance_id: {appearance_id}")
     platform_price_histories = crud_platform_price_history.get_platform_price_histories(
         db,
         page=page,
@@ -41,6 +46,7 @@ def get_platform_price_histories(
         platform_id=platform_id,
         appearance_id=appearance_id
     )
+    logger.info(f"Found {len(platform_price_histories)} platform price histories.")
     return Response(data=platform_price_histories)
 
 
@@ -48,12 +54,15 @@ def get_platform_price_histories(
 def delete_platform_price_history(
         platform_price_history_id: int,
         db: Session = Depends(get_db),
-        _: User = Depends(require_admin)
+        current_user: User = Depends(require_admin)
 ):
+    logger.info(f"User {current_user.email} is deleting platform price history with ID: {platform_price_history_id}")
     operation_result = crud_platform_price_history.delete_platform_price_history(
         db=db,
         platform_price_history_id=platform_price_history_id
     )
     if operation_result.status == OperationStatus.NOT_FOUND:
+        logger.warning(f"Platform price history with ID {platform_price_history_id} not found for deletion.")
         raise BusinessException(ResultCode.NOT_FOUND)
+    logger.info(f"Platform price history with ID {platform_price_history_id} deleted successfully.")
     return Response(message="Platform price history deleted successfully")
