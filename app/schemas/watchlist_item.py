@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class WatchlistItemBase(BaseModel):
@@ -14,8 +14,7 @@ class WatchlistItemCreate(WatchlistItemBase):
 
 
 class WatchlistItem(WatchlistItemBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     watchlist_id: int
-
-    class Config:
-        from_attributes = True
