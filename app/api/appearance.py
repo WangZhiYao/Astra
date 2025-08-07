@@ -38,8 +38,7 @@ def create_appearance(
 @router.get("/{appearance_id}", response_model=Response[schemas.Appearance])
 def get_appearance(
         appearance_id: int,
-        db: Session = Depends(get_db),
-        _: models.User = Depends(require_admin)
+        db: Session = Depends(get_db)
 ):
     logger.info(f"Fetching appearance with ID: {appearance_id}")
     operation_result = crud_appearance.get_appearance_by_id(db, appearance_id=appearance_id)
@@ -57,8 +56,7 @@ def get_appearances(
         page: int = 1,
         page_size: int = 100,
         search_query: Optional[str] = None,
-        db: Session = Depends(get_db),
-        _: models.User = Depends(require_admin)
+        db: Session = Depends(get_db)
 ):
     logger.info(f"Fetching appearances with page: {page}, page_size: {page_size}, search_query: {search_query}")
     appearances = crud_appearance.get_appearances(db, page=page, page_size=page_size, search_query=search_query)
