@@ -1,4 +1,6 @@
-from sqlalchemy.orm import Session
+from typing import List
+
+from sqlalchemy.orm import Session, joinedload
 
 import app.models as models
 import app.schemas as schemas
@@ -11,6 +13,38 @@ def _get_watchlist_item_by_watchlist_and_appearance(db: Session, watchlist_id: i
         models.WatchlistItem.watchlist_id == watchlist_id,
         models.WatchlistItem.appearance_id == appearance_id
     ).first()
+
+
+def get_watchlist_items_by_watchlist_id(
+        db: Session,
+        user_id: int,
+        watchlist_id: int,
+        page: int,
+        page_size: int
+) -> OperationResult[List[schemas.WatchlistItem]]:
+    # First, check if the watchlist exists and belongs to the user.
+    watchlist = db.query(models.Watchlist).filter(
+        models.Watchlist.user_id == user_id,
+        models.Watchlist.id == watchlist_id
+    ).first()
+    if not watchlist:
+        return OperationResult(status=OperationStatus.NOT_FOUND)
+
+    # Then, query the items with pagination and eager loading.
+    query = (
+        db.query(models.WatchlistItem)
+        .options(
+            joinedload(models.WatchlistItem.appearance).selectinload(models.Appearance.appearance_aliases),
+            joinedload(models.WatchlistItem.appearance).selectinload(models.Appearance.appearance_types)
+        )
+        .filter(models.WatchlistItem.watchlist_id == watchlist_id)
+    )
+
+    offset = (page - 1) * page_size
+    db_watchlist_items = query.offset(offset).limit(page_size).all()
+
+    data = [schemas.WatchlistItem.model_validate(item) for item in db_watchlist_items]
+    return OperationResult(status=OperationStatus.SUCCESS, data=data)
 
 
 def create_watchlist_item(

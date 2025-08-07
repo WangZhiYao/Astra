@@ -4,6 +4,8 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+import app.models as models
+import app.schemas as schemas
 from app.core.dependencies import get_current_user
 from app.core.exceptions import BusinessException
 from app.core.operation_result import OperationStatus
@@ -11,18 +13,16 @@ from app.core.response import Response
 from app.core.result_codes import ResultCode
 from app.crud import crud_watchlist
 from app.db.database import get_db
-from app.models import User
-from app.schemas import Watchlist, WatchlistCreate, WatchlistUpdate
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("", status_code=status.HTTP_201_CREATED, response_model=Response[Watchlist])
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=Response[schemas.Watchlist])
 def create_watchlist(
-        watchlist: WatchlistCreate,
+        watchlist: schemas.WatchlistCreate,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        current_user: models.User = Depends(get_current_user)
 ):
     logger.info(f"User {current_user.email} is creating a new watchlist with name: {watchlist.name}")
     operation_result = crud_watchlist.create_watchlist(db=db, user_id=current_user.id, watchlist=watchlist)
@@ -35,10 +35,10 @@ def create_watchlist(
     return Response(data=operation_result.data)
 
 
-@router.get("", response_model=Response[List[Watchlist]])
+@router.get("", response_model=Response[List[schemas.Watchlist]])
 def get_watchlists(
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        current_user: models.User = Depends(get_current_user)
 ):
     logger.info(f"User {current_user.email} is fetching their watchlists.")
     operation_result = crud_watchlist.get_watchlists_by_user(db=db, user_id=current_user.id)
@@ -46,12 +46,12 @@ def get_watchlists(
     return Response(data=operation_result.data)
 
 
-@router.put("/{watchlist_id}", response_model=Response[Watchlist])
+@router.put("/{watchlist_id}", response_model=Response[schemas.Watchlist])
 def update_watchlist(
         watchlist_id: int,
-        watchlist: WatchlistUpdate,
+        watchlist: schemas.WatchlistUpdate,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        current_user: models.User = Depends(get_current_user)
 ):
     logger.info(f"User {current_user.email} is updating watchlist with ID: {watchlist_id}")
     operation_result = crud_watchlist.update_watchlist(
@@ -77,7 +77,7 @@ def update_watchlist(
 def delete_watchlist(
         watchlist_id: int,
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        current_user: models.User = Depends(get_current_user)
 ):
     logger.info(f"User {current_user.email} is deleting watchlist with ID: {watchlist_id}")
     operation_result = crud_watchlist.delete_watchlist(db=db, user_id=current_user.id, watchlist_id=watchlist_id)

@@ -1,8 +1,6 @@
-from typing import Optional, List
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
-
-from .watchlist_item import WatchlistItem
 
 
 class WatchlistBase(BaseModel):
@@ -24,4 +22,3 @@ class Watchlist(WatchlistBase):
 
     id: int
     user_id: int
-    items: List[WatchlistItem] = []

@@ -2,6 +2,8 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
+from .appearance import Appearance
+
 
 class WatchlistItemBase(BaseModel):
     appearance_id: int
@@ -18,3 +20,4 @@ class WatchlistItem(WatchlistItemBase):
 
     id: int
     watchlist_id: int
+    appearance: Optional[Appearance] = None

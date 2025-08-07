@@ -94,7 +94,7 @@ app.include_router(platform_price_history.router, prefix="/platform-price-histor
 
 # Watchlist 类
 app.include_router(watchlist.router, prefix="/watchlists", tags=["watchlists"])
-app.include_router(watchlist_item.router, prefix="/watchlist-items", tags=["watchlists"])
+app.include_router(watchlist_item.router, prefix="/watchlists/{watchlist_id}/items", tags=["watchlists"])
 
 
 @app.get("/")
