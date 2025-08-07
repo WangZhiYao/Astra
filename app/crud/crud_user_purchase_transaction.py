@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 import app.models as models
 import app.schemas as schemas
@@ -23,9 +23,15 @@ def create_user_purchase_transaction(
     )
 
 
-def get_user_purchase_transaction_by_id(db: Session, user_id: int, transaction_id: int) -> OperationResult[
-    schemas.UserPurchaseTransaction]:
-    db_transaction = db.query(models.UserPurchaseTransaction).filter(
+def get_user_purchase_transaction_by_id(
+        db: Session,
+        user_id: int,
+        transaction_id: int
+) -> OperationResult[schemas.UserPurchaseTransaction]:
+    db_transaction = db.query(models.UserPurchaseTransaction).options(
+        joinedload(models.UserPurchaseTransaction.appearance),
+        joinedload(models.UserPurchaseTransaction.platform)
+    ).filter(
         models.UserPurchaseTransaction.user_id == user_id,
         models.UserPurchaseTransaction.id == transaction_id
     ).first()
@@ -44,7 +50,10 @@ def get_user_purchase_transactions(
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None
 ) -> OperationResult[List[schemas.UserPurchaseTransaction]]:
-    query = db.query(models.UserPurchaseTransaction).filter(models.UserPurchaseTransaction.user_id == user_id)
+    query = db.query(models.UserPurchaseTransaction).options(
+        joinedload(models.UserPurchaseTransaction.appearance),
+        joinedload(models.UserPurchaseTransaction.platform)
+    ).filter(models.UserPurchaseTransaction.user_id == user_id)
 
     if appearance_id:
         query = query.filter(models.UserPurchaseTransaction.appearance_id == appearance_id)

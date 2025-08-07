@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 import app.models as models
 import app.schemas as schemas
@@ -28,7 +28,10 @@ def get_user_sale_transaction_by_id(
         user_id: int,
         transaction_id: int
 ) -> OperationResult[schemas.UserSaleTransaction]:
-    db_transaction = db.query(models.UserSaleTransaction).filter(
+    db_transaction = db.query(models.UserSaleTransaction).options(
+        joinedload(models.UserSaleTransaction.appearance),
+        joinedload(models.UserSaleTransaction.platform)
+    ).filter(
         models.UserSaleTransaction.user_id == user_id,
         models.UserSaleTransaction.id == transaction_id
     ).first()
@@ -51,7 +54,10 @@ def get_user_sale_transactions(
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None
 ) -> OperationResult[List[schemas.UserSaleTransaction]]:
-    query = db.query(models.UserSaleTransaction).filter(models.UserSaleTransaction.user_id == user_id)
+    query = db.query(models.UserSaleTransaction).options(
+        joinedload(models.UserSaleTransaction.appearance),
+        joinedload(models.UserSaleTransaction.platform)
+    ).filter(models.UserSaleTransaction.user_id == user_id)
 
     if appearance_id:
         query = query.filter(models.UserSaleTransaction.appearance_id == appearance_id)

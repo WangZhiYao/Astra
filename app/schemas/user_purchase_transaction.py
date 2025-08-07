@@ -3,10 +3,11 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
+from .appearance import Appearance
+from .platform import Platform
+
 
 class UserPurchaseTransactionBase(BaseModel):
-    appearance_id: int
-    platform_id: Optional[int] = None
     quantity: int
     unit_price_cents: int
     purchased_at: datetime
@@ -14,15 +15,12 @@ class UserPurchaseTransactionBase(BaseModel):
 
 
 class UserPurchaseTransactionCreate(UserPurchaseTransactionBase):
-    pass
-
-
-class UserPurchaseTransactionUpdate(BaseModel):
+    appearance_id: int
     platform_id: Optional[int] = None
-    quantity: Optional[int] = None
-    unit_price_cents: Optional[int] = None
-    purchased_at: Optional[datetime] = None
-    notes: Optional[str] = None
+
+
+class UserPurchaseTransactionUpdate(UserPurchaseTransactionCreate):
+    pass
 
 
 class UserPurchaseTransaction(UserPurchaseTransactionBase):
@@ -30,4 +28,6 @@ class UserPurchaseTransaction(UserPurchaseTransactionBase):
 
     id: int
     user_id: int
+    appearance: Appearance
+    platform: Optional[Platform] = None
     created_at: datetime
