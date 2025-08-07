@@ -1,27 +1,30 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models import UserPurchaseTransaction, UserSaleTransaction, PlatformPriceHistory
-from app.schemas import UserStats
+import app.models as models
+import app.schemas as schemas
 
 
-def get_user_stats(db: Session, user_id: int) -> UserStats:
+def get_user_stats(db: Session, user_id: int) -> schemas.UserStats:
     # 1. Calculate average cost for each purchased appearance
     purchase_summary = db.query(
-        UserPurchaseTransaction.appearance_id,
-        func.sum(UserPurchaseTransaction.quantity).label("total_purchased"),
-        func.sum(UserPurchaseTransaction.quantity * UserPurchaseTransaction.unit_price_cents).label("total_cost"),
-        (func.sum(UserPurchaseTransaction.quantity * UserPurchaseTransaction.unit_price_cents) /
-         func.sum(UserPurchaseTransaction.quantity)).label("average_cost_cents")
-    ).filter(UserPurchaseTransaction.user_id == user_id).group_by(UserPurchaseTransaction.appearance_id).subquery()
+        models.UserPurchaseTransaction.appearance_id,
+        func.sum(models.UserPurchaseTransaction.quantity).label("total_purchased"),
+        func.sum(models.UserPurchaseTransaction.quantity * models.UserPurchaseTransaction.unit_price_cents).label(
+            "total_cost"),
+        (func.sum(models.UserPurchaseTransaction.quantity * models.UserPurchaseTransaction.unit_price_cents) /
+         func.sum(models.UserPurchaseTransaction.quantity)).label("average_cost_cents")
+    ).filter(models.UserPurchaseTransaction.user_id == user_id).group_by(
+        models.UserPurchaseTransaction.appearance_id).subquery()
 
     # 2. Summarize sales
     sale_summary = db.query(
-        UserSaleTransaction.appearance_id,
-        func.sum(UserSaleTransaction.quantity).label("total_sold"),
-        func.sum(UserSaleTransaction.quantity * UserSaleTransaction.unit_price_cents -
-                 UserSaleTransaction.platform_fee_cents).label("total_revenue")
-    ).filter(UserSaleTransaction.user_id == user_id).group_by(UserSaleTransaction.appearance_id).subquery()
+        models.UserSaleTransaction.appearance_id,
+        func.sum(models.UserSaleTransaction.quantity).label("total_sold"),
+        func.sum(models.UserSaleTransaction.quantity * models.UserSaleTransaction.unit_price_cents -
+                 models.UserSaleTransaction.platform_fee_cents).label("total_revenue")
+    ).filter(models.UserSaleTransaction.user_id == user_id).group_by(
+        models.UserSaleTransaction.appearance_id).subquery()
 
     # 3. Calculate Realized PnL
     realized_pnl_query = db.query(
@@ -46,15 +49,15 @@ def get_user_stats(db: Session, user_id: int) -> UserStats:
 
     # 5. Get the latest price for each appearance
     latest_prices = db.query(
-        PlatformPriceHistory.appearance_id,
-        func.max(PlatformPriceHistory.crawled_at).label("max_crawled_at")
-    ).group_by(PlatformPriceHistory.appearance_id).subquery()
+        models.PlatformPriceHistory.appearance_id,
+        func.max(models.PlatformPriceHistory.crawled_at).label("max_crawled_at")
+    ).group_by(models.PlatformPriceHistory.appearance_id).subquery()
 
     current_prices = db.query(
-        PlatformPriceHistory.appearance_id,
-        PlatformPriceHistory.lowest_price_cents
-    ).join(latest_prices, (PlatformPriceHistory.appearance_id == latest_prices.c.appearance_id) &
-           (PlatformPriceHistory.crawled_at == latest_prices.c.max_crawled_at)).subquery()
+        models.PlatformPriceHistory.appearance_id,
+        models.PlatformPriceHistory.lowest_price_cents
+    ).join(latest_prices, (models.PlatformPriceHistory.appearance_id == latest_prices.c.appearance_id) &
+           (models.PlatformPriceHistory.crawled_at == latest_prices.c.max_crawled_at)).subquery()
 
     # 6. Calculate total investment and market value for holdings
     stats = db.query(
@@ -72,7 +75,7 @@ def get_user_stats(db: Session, user_id: int) -> UserStats:
     estimated_pnl_cents = current_market_value_cents - total_investment_cents
     estimated_pnl_percentage = (estimated_pnl_cents / total_investment_cents) * 100 if total_investment_cents > 0 else 0
 
-    return UserStats(
+    return schemas.UserStats(
         total_appearances_held=int(total_appearances_held),
         total_investment_cents=int(total_investment_cents),
         current_market_value_cents=int(current_market_value_cents),

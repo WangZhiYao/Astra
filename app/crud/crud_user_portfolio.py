@@ -4,9 +4,9 @@ from typing import List
 from sqlalchemy import func, desc, asc, cast, Float
 from sqlalchemy.orm import Session, joinedload
 
+import app.models as models
+import app.schemas as schemas
 from app.core.config import settings
-from app.models import UserPurchaseTransaction, UserSaleTransaction, Appearance, PlatformPriceHistory
-from app.schemas import UserPortfolio, UserPortfolioItem, PriceHistoryPoint, Appearance
 
 
 def get_user_portfolio(db: Session, user_id: int, page: int, page_size: int,
@@ -14,37 +14,38 @@ def get_user_portfolio(db: Session, user_id: int, page: int, page_size: int,
     # 1. 购买数据子查询
     purchase_subquery = (
         db.query(
-            UserPurchaseTransaction.appearance_id,
-            func.sum(UserPurchaseTransaction.quantity).label("total_purchased"),
-            func.sum(UserPurchaseTransaction.quantity * UserPurchaseTransaction.unit_price_cents).label("total_spent"),
+            models.UserPurchaseTransaction.appearance_id,
+            func.sum(models.UserPurchaseTransaction.quantity).label("total_purchased"),
+            func.sum(models.UserPurchaseTransaction.quantity * models.UserPurchaseTransaction.unit_price_cents).label(
+                "total_spent"),
         )
-        .filter(UserPurchaseTransaction.user_id == user_id)
-        .group_by(UserPurchaseTransaction.appearance_id)
+        .filter(models.UserPurchaseTransaction.user_id == user_id)
+        .group_by(models.UserPurchaseTransaction.appearance_id)
         .subquery('purchase_subquery')
     )
 
     # 2. 销售数据子查询
     sale_subquery = (
         db.query(
-            UserSaleTransaction.appearance_id,
-            func.sum(UserSaleTransaction.quantity).label("total_sold"),
+            models.UserSaleTransaction.appearance_id,
+            func.sum(models.UserSaleTransaction.quantity).label("total_sold"),
         )
-        .filter(UserSaleTransaction.user_id == user_id)
-        .group_by(UserSaleTransaction.appearance_id)
+        .filter(models.UserSaleTransaction.user_id == user_id)
+        .group_by(models.UserSaleTransaction.appearance_id)
         .subquery('sale_subquery')
     )
 
     # 3. 最新价格查询
     latest_price_subquery = (
         db.query(
-            PlatformPriceHistory.appearance_id,
-            PlatformPriceHistory.lowest_price_cents.label("price"),
-            PlatformPriceHistory.quantity_on_sale,
+            models.PlatformPriceHistory.appearance_id,
+            models.PlatformPriceHistory.lowest_price_cents.label("price"),
+            models.PlatformPriceHistory.quantity_on_sale,
         )
-        .distinct(PlatformPriceHistory.appearance_id)
+        .distinct(models.PlatformPriceHistory.appearance_id)
         .order_by(
-            PlatformPriceHistory.appearance_id,
-            PlatformPriceHistory.crawled_at.desc()
+            models.PlatformPriceHistory.appearance_id,
+            models.PlatformPriceHistory.crawled_at.desc()
         )
         .subquery('latest_price_subquery')
     )
@@ -61,9 +62,9 @@ def get_user_portfolio(db: Session, user_id: int, page: int, page_size: int,
 
     # 5. 基础查询（用于计算总数）
     base_query = (
-        db.query(Appearance.id)
-        .join(purchase_subquery, Appearance.id == purchase_subquery.c.appearance_id)
-        .outerjoin(sale_subquery, Appearance.id == sale_subquery.c.appearance_id)
+        db.query(models.Appearance.id)
+        .join(purchase_subquery, models.Appearance.id == purchase_subquery.c.appearance_id)
+        .outerjoin(sale_subquery, models.Appearance.id == sale_subquery.c.appearance_id)
         .filter(quantity > 0)
     )
 
@@ -71,25 +72,25 @@ def get_user_portfolio(db: Session, user_id: int, page: int, page_size: int,
     total = base_query.count()
 
     if total == 0:
-        return UserPortfolio(total=0, items=[])
+        return schemas.UserPortfolio(total=0, items=[])
 
     # 7. 主查询
     query = (
         db.query(
-            Appearance,
+            models.Appearance,
             quantity,
             average_cost,
             total_investment,
             current_market_value,
             profit_loss
         )
-        .join(purchase_subquery, Appearance.id == purchase_subquery.c.appearance_id)
-        .outerjoin(sale_subquery, Appearance.id == sale_subquery.c.appearance_id)
-        .outerjoin(latest_price_subquery, Appearance.id == latest_price_subquery.c.appearance_id)
+        .join(purchase_subquery, models.Appearance.id == purchase_subquery.c.appearance_id)
+        .outerjoin(sale_subquery, models.Appearance.id == sale_subquery.c.appearance_id)
+        .outerjoin(latest_price_subquery, models.Appearance.id == latest_price_subquery.c.appearance_id)
         .filter(quantity > 0)
         .options(
-            joinedload(Appearance.appearance_types),
-            joinedload(Appearance.appearance_aliases)
+            joinedload(models.Appearance.appearance_types),
+            joinedload(models.Appearance.appearance_aliases)
         )
     )
 
@@ -123,10 +124,10 @@ def get_user_portfolio(db: Session, user_id: int, page: int, page_size: int,
         # 安全的百分比计算
         profit_loss_percentage = (pl / total_inv * 100) if total_inv and total_inv > 0 else 0
 
-        appearance = Appearance.model_validate(appearance)
+        appearance = schemas.Appearance.model_validate(appearance)
 
         items.append(
-            UserPortfolioItem(
+            schemas.UserPortfolioItem(
                 appearance=appearance,
                 quantity=qty or 0,
                 average_cost=avg_cost or 0,
@@ -138,7 +139,7 @@ def get_user_portfolio(db: Session, user_id: int, page: int, page_size: int,
             )
         )
 
-    return UserPortfolio(total=total, items=items)
+    return schemas.UserPortfolio(total=total, items=items)
 
 
 def _get_price_histories_batch(db: Session, appearance_ids: List[int],
@@ -149,16 +150,16 @@ def _get_price_histories_batch(db: Session, appearance_ids: List[int],
 
     price_history_subquery = (
         db.query(
-            PlatformPriceHistory.appearance_id,
-            PlatformPriceHistory.lowest_price_cents,
-            PlatformPriceHistory.quantity_on_sale,
-            PlatformPriceHistory.crawled_at,
+            models.PlatformPriceHistory.appearance_id,
+            models.PlatformPriceHistory.lowest_price_cents,
+            models.PlatformPriceHistory.quantity_on_sale,
+            models.PlatformPriceHistory.crawled_at,
             func.row_number().over(
-                partition_by=PlatformPriceHistory.appearance_id,
-                order_by=PlatformPriceHistory.crawled_at.desc()
+                partition_by=models.PlatformPriceHistory.appearance_id,
+                order_by=models.PlatformPriceHistory.crawled_at.desc()
             ).label('rn')
         )
-        .filter(PlatformPriceHistory.appearance_id.in_(appearance_ids))
+        .filter(models.PlatformPriceHistory.appearance_id.in_(appearance_ids))
         .subquery()
     )
 
@@ -175,7 +176,7 @@ def _get_price_histories_batch(db: Session, appearance_ids: List[int],
     price_histories_map = defaultdict(list)
     for row in price_history_data:
         price_histories_map[row.appearance_id].append(
-            PriceHistoryPoint(
+            schemas.PriceHistoryPoint(
                 price=row.lowest_price_cents,
                 quantity_on_sale=row.quantity_on_sale,
                 crawled_at=row.crawled_at,
