@@ -24,14 +24,19 @@ def create_platform(db: Session, platform: schemas.PlatformCreate) -> OperationR
     return OperationResult(status=OperationStatus.SUCCESS, data=schemas.Platform.model_validate(db_platform))
 
 
-def get_platform_by_id(db: Session, platform_id: int):
-    return db.query(models.Platform).filter(models.Platform.id == platform_id).first()
+def get_platform_by_id(db: Session, platform_id: int) -> OperationResult[schemas.Platform]:
+    db_platform = db.query(models.Platform).filter(models.Platform.id == platform_id).first()
+    if not db_platform:
+        return OperationResult(status=OperationStatus.NOT_FOUND)
+
+    return OperationResult(status=OperationStatus.SUCCESS, data=schemas.Platform.model_validate(db_platform))
 
 
-def get_platforms(db: Session, page: int = 1, page_size: int = 100) -> List[schemas.Platform]:
+def get_platforms(db: Session, page: int = 1, page_size: int = 100) -> OperationResult[List[schemas.Platform]]:
     offset = (page - 1) * page_size
     db_platforms = db.query(models.Platform).offset(offset).limit(page_size).all()
-    return [schemas.Platform.model_validate(db_platform) for db_platform in db_platforms]
+    data = [schemas.Platform.model_validate(db_platform) for db_platform in db_platforms]
+    return OperationResult(status=OperationStatus.SUCCESS, data=data)
 
 
 def update_platform(
@@ -39,9 +44,11 @@ def update_platform(
         platform_id: int,
         platform: schemas.PlatformUpdate
 ) -> OperationResult[schemas.Platform]:
-    db_platform = get_platform_by_id(db=db, platform_id=platform_id)
-    if not db_platform:
+    operation_result = get_platform_by_id(db, platform_id=platform_id)
+    if operation_result.status == OperationStatus.NOT_FOUND:
         return OperationResult(status=OperationStatus.NOT_FOUND)
+
+    db_platform = operation_result.data
 
     update_data = platform.model_dump(exclude_unset=True)
     if "name" in update_data and update_data["name"] != db_platform.name:
@@ -61,12 +68,14 @@ def update_platform(
     return OperationResult(status=OperationStatus.SUCCESS, data=schemas.Platform.model_validate(db_platform))
 
 
-def delete_platform(db: Session, platform_id: int):
-    db_platform = get_platform_by_id(db=db, platform_id=platform_id)
-    if not db_platform:
+def delete_platform(db: Session, platform_id: int) -> OperationResult:
+    operation_result = get_platform_by_id(db, platform_id=platform_id)
+    if operation_result.status == OperationStatus.NOT_FOUND:
         return OperationResult(status=OperationStatus.NOT_FOUND)
+
+    db_platform = operation_result.data
 
     db.delete(db_platform)
     db.commit()
 
-    return OperationResult(status=OperationStatus.SUCCESS, data=schemas.Platform.model_validate(db_platform))
+    return OperationResult(status=OperationStatus.SUCCESS)

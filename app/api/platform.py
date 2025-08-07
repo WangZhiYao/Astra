@@ -1,5 +1,5 @@
-from typing import List
 import logging
+from typing import List
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
@@ -41,12 +41,12 @@ def get_platform(
         db: Session = Depends(get_db)
 ):
     logger.info(f"Fetching platform with ID: {platform_id}")
-    db_platform = crud_platform.get_platform_by_id(db, platform_id=platform_id)
-    if db_platform is None:
+    operation_result = crud_platform.get_platform_by_id(db, platform_id=platform_id)
+    if operation_result.status == OperationStatus.NOT_FOUND:
         logger.warning(f"Platform with ID {platform_id} not found.")
         raise BusinessException(ResultCode.NOT_FOUND)
     logger.info(f"Platform with ID {platform_id} fetched successfully.")
-    return Response(data=db_platform)
+    return Response(data=operation_result.data)
 
 
 @router.get("", response_model=Response[List[schemas.Platform]])
@@ -56,9 +56,9 @@ def get_platforms(
         db: Session = Depends(get_db)
 ):
     logger.info(f"Fetching platforms with page: {page}, page_size: {page_size}")
-    platforms = crud_platform.get_platforms(db, page=page, page_size=page_size)
-    logger.info(f"Found {len(platforms)} platforms.")
-    return Response(data=platforms)
+    operation_result = crud_platform.get_platforms(db, page=page, page_size=page_size)
+    logger.info(f"Found {len(operation_result.data)} platforms.")
+    return Response(data=operation_result.data)
 
 
 @router.put("/{platform_id}", response_model=Response[schemas.Platform])
@@ -73,7 +73,7 @@ def update_platform(
     if operation_result.status == OperationStatus.CONFLICT:
         logger.warning(f"Platform update failed due to conflict for platform ID: {platform_id}")
         raise BusinessException(ResultCode.PLATFORM_ALREADY_EXISTS)
-    elif operation_result.status == OperationStatus.NOT_FOUND:
+    if operation_result.status == OperationStatus.NOT_FOUND:
         logger.warning(f"Platform with ID {platform_id} not found for update.")
         raise BusinessException(ResultCode.NOT_FOUND)
 
@@ -89,8 +89,8 @@ def delete_platform(
         current_user: models.User = Depends(require_admin)
 ):
     logger.info(f"User {current_user.email} is deleting platform with ID: {platform_id}")
-    db_platform = crud_platform.delete_platform(db, platform_id=platform_id)
-    if db_platform is None:
+    operation_result = crud_platform.delete_platform(db, platform_id=platform_id)
+    if operation_result.status == OperationStatus.NOT_FOUND:
         logger.warning(f"Platform with ID {platform_id} not found for deletion.")
         raise BusinessException(ResultCode.NOT_FOUND)
     logger.info(f"Platform with ID {platform_id} deleted successfully.")
