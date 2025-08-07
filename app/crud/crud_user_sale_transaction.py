@@ -12,19 +12,34 @@ def create_user_sale_transaction(
         db: Session,
         user_id: int,
         sale_transaction: schemas.UserSaleTransactionCreate
-) -> schemas.UserSaleTransaction:
+) -> OperationResult[schemas.UserSaleTransaction]:
     db_sale_transaction = models.UserSaleTransaction(user_id=user_id, **sale_transaction.model_dump())
     db.add(db_sale_transaction)
     db.commit()
     db.refresh(db_sale_transaction)
-    return schemas.UserSaleTransaction.model_validate(db_sale_transaction)
+    return OperationResult(
+        status=OperationStatus.SUCCESS,
+        data=schemas.UserSaleTransaction.model_validate(db_sale_transaction)
+    )
 
 
-def get_user_sale_transaction_by_id(db: Session, user_id: int, transaction_id: int):
-    return db.query(models.UserSaleTransaction).filter(
+def get_user_sale_transaction_by_id(
+        db: Session,
+        user_id: int,
+        transaction_id: int
+) -> OperationResult[schemas.UserSaleTransaction]:
+    db_transaction = db.query(models.UserSaleTransaction).filter(
         models.UserSaleTransaction.user_id == user_id,
         models.UserSaleTransaction.id == transaction_id
     ).first()
+
+    if not db_transaction:
+        return OperationResult(status=OperationStatus.NOT_FOUND)
+
+    return OperationResult(
+        status=OperationStatus.SUCCESS,
+        data=schemas.UserSaleTransaction.model_validate(db_transaction)
+    )
 
 
 def get_user_sale_transactions(
@@ -35,7 +50,7 @@ def get_user_sale_transactions(
         appearance_id: Optional[int] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None
-) -> List[schemas.UserSaleTransaction]:
+) -> OperationResult[List[schemas.UserSaleTransaction]]:
     query = db.query(models.UserSaleTransaction).filter(models.UserSaleTransaction.user_id == user_id)
 
     if appearance_id:
@@ -47,8 +62,9 @@ def get_user_sale_transactions(
 
     offset = (page - 1) * page_size
     db_sale_transactions = query.offset(offset).limit(page_size).all()
-    return [schemas.UserSaleTransaction.model_validate(db_sale_transaction) for db_sale_transaction in
+    data = [schemas.UserSaleTransaction.model_validate(db_sale_transaction) for db_sale_transaction in
             db_sale_transactions]
+    return OperationResult(status=OperationStatus.SUCCESS, data=data)
 
 
 def update_user_sale_transaction(
@@ -57,7 +73,11 @@ def update_user_sale_transaction(
         transaction_id: int,
         transaction: schemas.UserSaleTransactionUpdate
 ) -> OperationResult[schemas.UserSaleTransaction]:
-    db_transaction = get_user_sale_transaction_by_id(db=db, user_id=user_id, transaction_id=transaction_id)
+    db_transaction = db.query(models.UserSaleTransaction).filter(
+        models.UserSaleTransaction.user_id == user_id,
+        models.UserSaleTransaction.id == transaction_id
+    ).first()
+
     if not db_transaction:
         return OperationResult(status=OperationStatus.NOT_FOUND)
 
@@ -68,17 +88,22 @@ def update_user_sale_transaction(
     db.commit()
     db.refresh(db_transaction)
 
-    return OperationResult(status=OperationStatus.SUCCESS,
-                           data=schemas.UserSaleTransaction.model_validate(db_transaction))
+    return OperationResult(
+        status=OperationStatus.SUCCESS,
+        data=schemas.UserSaleTransaction.model_validate(db_transaction)
+    )
 
 
-def delete_user_sale_transaction(db: Session, user_id: int, transaction_id: int):
-    db_transaction = get_user_sale_transaction_by_id(db=db, user_id=user_id, transaction_id=transaction_id)
+def delete_user_sale_transaction(db: Session, user_id: int, transaction_id: int) -> OperationResult:
+    db_transaction = db.query(models.UserSaleTransaction).filter(
+        models.UserSaleTransaction.user_id == user_id,
+        models.UserSaleTransaction.id == transaction_id
+    ).first()
+
     if not db_transaction:
         return OperationResult(status=OperationStatus.NOT_FOUND)
 
     db.delete(db_transaction)
     db.commit()
 
-    return OperationResult(status=OperationStatus.SUCCESS,
-                           data=schemas.UserSaleTransaction.model_validate(db_transaction))
+    return OperationResult(status=OperationStatus.SUCCESS)
