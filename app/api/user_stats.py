@@ -1,6 +1,7 @@
+import logging
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-import logging
 
 from app.core.dependencies import get_current_user
 from app.core.response import Response
@@ -19,6 +20,6 @@ def get_user_stats(
         current_user: User = Depends(get_current_user)
 ):
     logger.info(f"User {current_user.email} is fetching their stats.")
-    user_stats = crud_user_stats.get_user_stats(db, user_id=current_user.id)
+    operation_result = crud_user_stats.get_user_stats(db, user_id=current_user.id)
     logger.info(f"User {current_user.email} stats fetched successfully.")
-    return Response(data=user_stats)
+    return Response(data=operation_result.data)

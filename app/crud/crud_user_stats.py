@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 
 import app.models as models
 import app.schemas as schemas
+from app.core.operation_result import OperationResult, OperationStatus
 
 
-def get_user_stats(db: Session, user_id: int) -> schemas.UserStats:
+def get_user_stats(db: Session, user_id: int) -> OperationResult[schemas.UserStats]:
     # 1. Calculate average cost for each purchased appearance
     purchase_summary = db.query(
         models.UserPurchaseTransaction.appearance_id,
@@ -62,7 +63,8 @@ def get_user_stats(db: Session, user_id: int) -> schemas.UserStats:
     # 6. Calculate total investment and market value for holdings
     stats = db.query(
         func.sum(holdings_query.c.held_quantity).label("total_appearances_held"),
-        func.sum(holdings_query.c.held_quantity * holdings_query.c.average_cost_cents).label("total_investment_cents"),
+        func.sum(holdings_query.c.held_quantity * holdings_query.c.average_cost_cents).label(
+            "total_investment_cents"),
         func.sum(holdings_query.c.held_quantity * func.coalesce(current_prices.c.lowest_price_cents, 0)).label(
             "current_market_value_cents")
     ).outerjoin(current_prices, holdings_query.c.appearance_id == current_prices.c.appearance_id).first()
@@ -75,7 +77,7 @@ def get_user_stats(db: Session, user_id: int) -> schemas.UserStats:
     estimated_pnl_cents = current_market_value_cents - total_investment_cents
     estimated_pnl_percentage = (estimated_pnl_cents / total_investment_cents) * 100 if total_investment_cents > 0 else 0
 
-    return schemas.UserStats(
+    data = schemas.UserStats(
         total_appearances_held=int(total_appearances_held),
         total_investment_cents=int(total_investment_cents),
         current_market_value_cents=int(current_market_value_cents),
@@ -83,3 +85,4 @@ def get_user_stats(db: Session, user_id: int) -> schemas.UserStats:
         estimated_pnl_percentage=estimated_pnl_percentage,
         realized_pnl_cents=int(realized_pnl_cents)
     )
+    return OperationResult(status=OperationStatus.SUCCESS, data=data)
