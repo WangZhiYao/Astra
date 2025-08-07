@@ -11,10 +11,16 @@ def _get_appearance_type_by_name(db: Session, name: str):
     return db.query(models.AppearanceType).filter(models.AppearanceType.name == name).first()
 
 
-def create_appearance_type(db: Session, appearance_type: schemas.AppearanceTypeCreate):
+def create_appearance_type(
+        db: Session,
+        appearance_type: schemas.AppearanceTypeCreate
+) -> OperationResult[schemas.AppearanceType]:
     db_appearance_type = _get_appearance_type_by_name(db=db, name=appearance_type.name)
     if db_appearance_type:
-        return OperationResult(status=OperationStatus.CONFLICT, data=db_appearance_type)
+        return OperationResult(
+            status=OperationStatus.CONFLICT,
+            data=schemas.AppearanceType.model_validate(db_appearance_type)
+        )
 
     db_appearance_type = models.AppearanceType(name=appearance_type.name)
     db.add(db_appearance_type)
@@ -27,10 +33,15 @@ def create_appearance_type(db: Session, appearance_type: schemas.AppearanceTypeC
     )
 
 
-def get_appearance_types(db: Session, page: int = 1, page_size: int = 100) -> List[schemas.AppearanceType]:
+def get_appearance_types(
+        db: Session,
+        page: int = 1,
+        page_size: int = 100
+) -> OperationResult[List[schemas.AppearanceType]]:
     offset = (page - 1) * page_size
     db_appearance_types = db.query(models.AppearanceType).offset(offset).limit(page_size).all()
-    return [schemas.AppearanceType.model_validate(db_appearance_type) for db_appearance_type in db_appearance_types]
+    data = [schemas.AppearanceType.model_validate(db_appearance_type) for db_appearance_type in db_appearance_types]
+    return OperationResult(status=OperationStatus.SUCCESS, data=data)
 
 
 def update_appearance_type(
@@ -63,9 +74,10 @@ def update_appearance_type(
     )
 
 
-def delete_appearance_type(db: Session, type_id: int):
+def delete_appearance_type(db: Session, type_id: int) -> OperationResult:
     db_appearance_type = db.query(models.AppearanceType).filter(models.AppearanceType.id == type_id).first()
-    if db_appearance_type:
-        db.delete(db_appearance_type)
-        db.commit()
-    return schemas.AppearanceType.model_validate(db_appearance_type)
+    if not db_appearance_type:
+        return OperationResult(status=OperationStatus.NOT_FOUND)
+    db.delete(db_appearance_type)
+    db.commit()
+    return OperationResult(status=OperationStatus.SUCCESS)

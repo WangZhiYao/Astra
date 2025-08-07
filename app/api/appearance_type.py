@@ -1,5 +1,5 @@
-from typing import List
 import logging
+from typing import List
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
@@ -42,9 +42,9 @@ def get_appearance_types(
         db: Session = Depends(get_db)
 ):
     logger.info(f"Fetching appearance types with page: {page}, page_size: {page_size}")
-    appearance_types = crud_appearance_type.get_appearance_types(db, page=page, page_size=page_size)
-    logger.info(f"Found {len(appearance_types)} appearance types.")
-    return Response(data=appearance_types)
+    operation_result = crud_appearance_type.get_appearance_types(db, page=page, page_size=page_size)
+    logger.info(f"Found {len(operation_result.data)} appearance types.")
+    return Response(data=operation_result.data)
 
 
 @router.put("/{type_id}", response_model=Response[schemas.AppearanceType])
@@ -55,16 +55,20 @@ def update_appearance_type(
         current_user: models.User = Depends(require_admin)
 ):
     logger.info(f"User {current_user.email} is updating appearance type with ID: {type_id}")
-    db_appearance_type = crud_appearance_type.update_appearance_type(
+    operation_result = crud_appearance_type.update_appearance_type(
         db,
         type_id=type_id,
         appearance_type=appearance_type
     )
-    if db_appearance_type is None:
+    if operation_result.status == OperationStatus.NOT_FOUND:
         logger.warning(f"Appearance type with ID {type_id} not found for update.")
         raise BusinessException(ResultCode.NOT_FOUND)
+    elif operation_result.status == OperationStatus.CONFLICT:
+        logger.warning(f"Appearance type with name {appearance_type.name} already exists.")
+        raise BusinessException(ResultCode.APPEARANCE_TYPE_ALREADY_EXISTS)
+
     logger.info(f"Appearance type with ID {type_id} updated successfully.")
-    return Response(data=db_appearance_type)
+    return Response(data=operation_result.data)
 
 
 @router.delete("/{type_id}", response_model=Response)
@@ -74,8 +78,8 @@ def delete_appearance_type(
         current_user: models.User = Depends(require_admin)
 ):
     logger.info(f"User {current_user.email} is deleting appearance type with ID: {type_id}")
-    db_appearance_type = crud_appearance_type.delete_appearance_type(db, type_id=type_id)
-    if db_appearance_type is None:
+    operation_result = crud_appearance_type.delete_appearance_type(db, type_id=type_id)
+    if operation_result.status == OperationStatus.NOT_FOUND:
         logger.warning(f"Appearance type with ID {type_id} not found for deletion.")
         raise BusinessException(ResultCode.NOT_FOUND)
     logger.info(f"Appearance type with ID {type_id} deleted successfully.")
