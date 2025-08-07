@@ -7,10 +7,17 @@ from sqlalchemy.orm import Session, joinedload
 import app.models as models
 import app.schemas as schemas
 from app.core.config import settings
+from app.core.operation_result import OperationResult, OperationStatus
 
 
-def get_user_portfolio(db: Session, user_id: int, page: int, page_size: int,
-                       sort_by: str | None = None, sort_order: str = 'desc'):
+def get_user_portfolio(
+        db: Session,
+        user_id: int,
+        page: int,
+        page_size: int,
+        sort_by: str | None = None,
+        sort_order: str = 'desc'
+) -> OperationResult[schemas.UserPortfolio]:
     # 1. 购买数据子查询
     purchase_subquery = (
         db.query(
@@ -72,7 +79,7 @@ def get_user_portfolio(db: Session, user_id: int, page: int, page_size: int,
     total = base_query.count()
 
     if total == 0:
-        return schemas.UserPortfolio(total=0, items=[])
+        return OperationResult(status=OperationStatus.SUCCESS, data=schemas.UserPortfolio(total=0, items=[]))
 
     # 7. 主查询
     query = (
@@ -139,11 +146,14 @@ def get_user_portfolio(db: Session, user_id: int, page: int, page_size: int,
             )
         )
 
-    return schemas.UserPortfolio(total=total, items=items)
+    return OperationResult(status=OperationStatus.SUCCESS, data=schemas.UserPortfolio(total=total, items=items))
 
 
-def _get_price_histories_batch(db: Session, appearance_ids: List[int],
-                               limit: int = settings.PRICE_HISTORY_FETCH_COUNT) -> dict:
+def _get_price_histories_batch(
+        db: Session,
+        appearance_ids: List[int],
+        limit: int = settings.PRICE_HISTORY_FETCH_COUNT
+) -> dict:
     """批量获取价格历史"""
     if not appearance_ids:
         return {}

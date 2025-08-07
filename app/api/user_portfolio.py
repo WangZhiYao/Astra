@@ -1,7 +1,8 @@
+import logging
+
 from fastapi import APIRouter, Depends
 from fastapi.params import Query
 from sqlalchemy.orm import Session
-import logging
 
 from app.core.dependencies import get_current_user
 from app.core.response import Response
@@ -25,7 +26,7 @@ def read_user_portfolio(
         sort_order: str = Query('desc', enum=["asc", "desc"]),
 ):
     logger.info(f"User {current_user.email} is fetching their portfolio with page: {page}, page_size: {page_size}, sort_by: {sort_by}, sort_order: {sort_order}")
-    user_portfolio = crud_user_portfolio.get_user_portfolio(
+    operation_result = crud_user_portfolio.get_user_portfolio(
         db=db,
         user_id=current_user.id,
         page=page,
@@ -33,5 +34,6 @@ def read_user_portfolio(
         sort_by=sort_by,
         sort_order=sort_order
     )
-    logger.info(f"User {current_user.email} portfolio fetched successfully with {len(user_portfolio.items)} items.")
-    return Response(data=user_portfolio)
+    logger.info(
+        f"User {current_user.email} portfolio fetched successfully with {len(operation_result.data.items)} items.")
+    return Response(data=operation_result.data)
