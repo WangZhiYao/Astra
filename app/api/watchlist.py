@@ -1,5 +1,5 @@
-from typing import List
 import logging
+from typing import List
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
@@ -41,9 +41,9 @@ def get_watchlists(
         current_user: User = Depends(get_current_user)
 ):
     logger.info(f"User {current_user.email} is fetching their watchlists.")
-    watchlists = crud_watchlist.get_watchlists_by_user(db=db, user_id=current_user.id)
-    logger.info(f"Found {len(watchlists)} watchlists for user {current_user.email}.")
-    return Response(data=watchlists)
+    operation_result = crud_watchlist.get_watchlists_by_user(db=db, user_id=current_user.id)
+    logger.info(f"Found {len(operation_result.data)} watchlists for user {current_user.email}.")
+    return Response(data=operation_result.data)
 
 
 @router.put("/{watchlist_id}", response_model=Response[Watchlist])
@@ -66,7 +66,7 @@ def update_watchlist(
         raise BusinessException(ResultCode.NOT_FOUND)
     elif operation_result.status == OperationStatus.CONFLICT:
         logger.warning(f"Watchlist update failed due to conflict for watchlist ID: {watchlist_id}")
-        raise BusinessException(ResultCode.WATCHLIST_NOT_EXISTS)
+        raise BusinessException(ResultCode.WATCHLIST_ALREADY_EXISTS)
 
     logger.info(f"Watchlist with ID {watchlist_id} updated successfully.")
 

@@ -13,9 +13,14 @@ def _get_watchlist_item_by_watchlist_and_appearance(db: Session, watchlist_id: i
     ).first()
 
 
-def create_watchlist_item(db: Session, user_id: int, watchlist_id: int, item: schemas.WatchlistItemCreate):
-    watchlist = get_watchlist_by_user(db=db, user_id=user_id, watchlist_id=watchlist_id)
-    if not watchlist:
+def create_watchlist_item(
+        db: Session,
+        user_id: int,
+        watchlist_id: int,
+        item: schemas.WatchlistItemCreate
+) -> OperationResult[schemas.WatchlistItem]:
+    operation_result = get_watchlist_by_user(db=db, user_id=user_id, watchlist_id=watchlist_id)
+    if operation_result.status == OperationStatus.NOT_FOUND:
         return OperationResult(status=OperationStatus.NOT_FOUND)
 
     existing_item = _get_watchlist_item_by_watchlist_and_appearance(
@@ -25,7 +30,10 @@ def create_watchlist_item(db: Session, user_id: int, watchlist_id: int, item: sc
     )
 
     if existing_item:
-        return OperationResult(status=OperationStatus.CONFLICT, data=existing_item)
+        return OperationResult(
+            status=OperationStatus.CONFLICT,
+            data=schemas.WatchlistItem.model_validate(existing_item)
+        )
 
     db_item = models.WatchlistItem(watchlist_id=watchlist_id, **item.model_dump())
     db.add(db_item)
@@ -42,11 +50,12 @@ def _get_watchlist_item_by_user(db: Session, user_id: int, watchlist_item_id: in
     ).first()
 
 
-def delete_watchlist_item(db: Session, user_id: int, watchlist_item_id: int):
-    db_item = _get_watchlist_item_by_user(db=db, user_id=user_id, watchlist_item_id=watchlist_item_id)
-    if not db_item:
+def delete_watchlist_item(db: Session, user_id: int, watchlist_item_id: int) -> OperationResult:
+    db_watchlist_item = _get_watchlist_item_by_user(db=db, user_id=user_id, watchlist_item_id=watchlist_item_id)
+    if not db_watchlist_item:
         return OperationResult(status=OperationStatus.NOT_FOUND)
 
-    db.delete(db_item)
+    db.delete(db_watchlist_item)
     db.commit()
-    return OperationResult(status=OperationStatus.SUCCESS, data=schemas.WatchlistItem.model_validate(db_item))
+
+    return OperationResult(status=OperationStatus.SUCCESS)

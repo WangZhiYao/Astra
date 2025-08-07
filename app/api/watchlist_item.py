@@ -1,6 +1,7 @@
+import logging
+
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
-import logging
 
 from app.core.dependencies import get_current_user
 from app.core.exceptions import BusinessException
@@ -33,7 +34,7 @@ def create_watchlist_item(
 
     if operation_result.status == OperationStatus.NOT_FOUND:
         logger.warning(f"Watchlist with ID {watchlist_id} not found for user {current_user.email}.")
-        return BusinessException(ResultCode.WATCHLIST_NOT_EXISTS)
+        raise BusinessException(ResultCode.WATCHLIST_NOT_EXISTS)
     elif operation_result.status == OperationStatus.CONFLICT:
         logger.warning(f"Watchlist item already exists in watchlist {watchlist_id} for user {current_user.email}.")
         raise BusinessException(ResultCode.WATCHLIST_ITEM_ALREADY_EXISTS)
@@ -43,7 +44,7 @@ def create_watchlist_item(
     return Response(data=operation_result.data)
 
 
-@router.delete("/{watchlist_item_id}")
+@router.delete("/{watchlist_item_id}", response_model=Response)
 def delete_watchlist_item(
         watchlist_item_id: int,
         db: Session = Depends(get_db),
@@ -58,8 +59,8 @@ def delete_watchlist_item(
 
     if operation_result.status == OperationStatus.NOT_FOUND:
         logger.warning(f"Watchlist item with ID {watchlist_item_id} not found for deletion by user {current_user.email}.")
-        return BusinessException(ResultCode.WATCHLIST_ITEM_NOT_EXISTS)
+        raise BusinessException(ResultCode.WATCHLIST_ITEM_NOT_EXISTS)
 
     logger.info(f"Watchlist item with ID {watchlist_item_id} deleted successfully.")
 
-    return Response(code=204, message="Watchlist item deleted successfully")
+    return Response(message="Watchlist item deleted successfully")
