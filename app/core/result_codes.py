@@ -11,6 +11,7 @@ class ResultCode(Enum):
     INVALID_REFRESH_TOKEN = (1003, "Invalid or expired refresh token", 401)
     INACTIVE_USER = (1004, "Inactive user", 400)
     INVALID_CREDENTIALS = (1005, "Could not validate credentials", 401)
+    VALIDATION_ERROR = (1006, "Validation error", 422)
 
     # Appearance Errors (2000-2099)
     APPEARANCE_ALREADY_EXISTS = (2000, "Appearance with this name already exists", 400)

@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -23,6 +24,26 @@ async def business_exception_handler(request: Request, exc: BusinessException):
     return JSONResponse(
         status_code=exc.result_code.status_code,
         content={"code": exc.result_code.code, "message": exc.result_code.message},
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    # Log the validation errors for debugging
+    logger.warning(f"Validation error on request {request.method} {request.url}: {exc.errors()}")
+
+    # Format the error messages
+    error_messages = []
+    for error in exc.errors():
+        # field = ".".join(str(p) for p in error['loc']) # e.g., "body.email"
+        field = str(error['loc'][-1])
+        message = f"Field '{field}': {error['msg']}"
+        error_messages.append(message)
+    detailed_message = "; ".join(error_messages)
+
+    return JSONResponse(
+        status_code=ResultCode.VALIDATION_ERROR.status_code,
+        content={"code": ResultCode.VALIDATION_ERROR.code, "message": detailed_message},
     )
 
 
