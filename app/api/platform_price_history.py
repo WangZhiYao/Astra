@@ -1,5 +1,5 @@
-from typing import List, Optional
 import logging
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
@@ -25,9 +25,9 @@ def create_platform_price_histories(
         current_user: User = Depends(require_admin)
 ):
     logger.info(f"User {current_user.email} is creating {len(histories)} new platform price histories.")
-    count = crud_platform_price_history.create_platform_price_histories(db=db, histories=histories)
-    logger.info(f"Successfully created {count} platform price histories.")
-    return Response(message=f"Successfully created {count} platform price histories.")
+    operation_result = crud_platform_price_history.create_platform_price_histories(db=db, histories=histories)
+    logger.info(f"Successfully created {operation_result.data} platform price histories.")
+    return Response(message=f"Successfully created {operation_result.data} platform price histories.")
 
 
 @router.get("", response_model=Response[List[PlatformPriceHistory]])
@@ -39,15 +39,15 @@ def get_platform_price_histories(
         db: Session = Depends(get_db)
 ):
     logger.info(f"Fetching platform price histories with page: {page}, page_size: {page_size}, platform_id: {platform_id}, appearance_id: {appearance_id}")
-    platform_price_histories = crud_platform_price_history.get_platform_price_histories(
+    operation_result = crud_platform_price_history.get_platform_price_histories(
         db,
         page=page,
         page_size=page_size,
         platform_id=platform_id,
         appearance_id=appearance_id
     )
-    logger.info(f"Found {len(platform_price_histories)} platform price histories.")
-    return Response(data=platform_price_histories)
+    logger.info(f"Found {len(operation_result.data)} platform price histories.")
+    return Response(data=operation_result.data)
 
 
 @router.delete("/{platform_price_history_id}", response_model=Response)
