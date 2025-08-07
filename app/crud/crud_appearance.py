@@ -12,10 +12,13 @@ def _get_appearance_by_name(db: Session, name: str) -> Optional[models.Appearanc
     return db.query(models.Appearance).filter(models.Appearance.name == name).first()
 
 
-def create_appearance(db: Session, appearance: schemas.AppearanceCreate):
+def create_appearance(db: Session, appearance: schemas.AppearanceCreate) -> OperationResult[schemas.Appearance]:
     db_appearance = _get_appearance_by_name(db=db, name=appearance.name)
     if db_appearance:
-        return OperationResult(status=OperationStatus.CONFLICT, data=db_appearance)
+        return OperationResult(
+            status=OperationStatus.CONFLICT,
+            data=schemas.Appearance.model_validate(db_appearance)
+        )
 
     db_appearance = models.Appearance(
         name=appearance.name,
@@ -30,7 +33,7 @@ def create_appearance(db: Session, appearance: schemas.AppearanceCreate):
     return OperationResult(status=OperationStatus.SUCCESS, data=schemas.Appearance.model_validate(db_appearance))
 
 
-def get_appearance_by_id(db: Session, appearance_id: int):
+def get_appearance_by_id(db: Session, appearance_id: int) -> OperationResult[schemas.Appearance]:
     db_appearance = db.query(models.Appearance).options(
         joinedload(models.Appearance.appearance_aliases),
         joinedload(models.Appearance.appearance_types)
@@ -47,7 +50,7 @@ def get_appearances(
         page: int = 1,
         page_size: int = 100,
         search_query: Optional[str] = None
-) -> List[schemas.Appearance]:
+) -> OperationResult[List[schemas.Appearance]]:
     query = db.query(models.Appearance).options(
         joinedload(models.Appearance.appearance_aliases),
         joinedload(models.Appearance.appearance_types)
@@ -60,7 +63,11 @@ def get_appearances(
         )
 
     offset = (page - 1) * page_size
-    return query.offset(offset).limit(page_size).all()
+    data = query.offset(offset).limit(page_size).all()
+    return OperationResult(
+        status=OperationStatus.SUCCESS,
+        data=[schemas.Appearance.model_validate(a) for a in data]
+    )
 
 
 def update_appearance(
@@ -76,7 +83,8 @@ def update_appearance(
     if "name" in update_data and update_data["name"] != db_appearance.name:
         existing_appearance = _get_appearance_by_name(db, name=update_data["name"])
         if existing_appearance:
-            return OperationResult(status=OperationStatus.CONFLICT, data=existing_appearance)
+            return OperationResult(status=OperationStatus.CONFLICT,
+                                   data=schemas.Appearance.model_validate(existing_appearance))
 
     for key, value in update_data.items():
         setattr(db_appearance, key, value)
@@ -84,12 +92,13 @@ def update_appearance(
     db.commit()
     db.refresh(db_appearance)
 
-    return OperationResult(status=OperationStatus.SUCCESS, data=db_appearance)
+    return OperationResult(status=OperationStatus.SUCCESS, data=schemas.Appearance.model_validate(db_appearance))
 
 
-def delete_appearance(db: Session, appearance_id: int):
+def delete_appearance(db: Session, appearance_id: int) -> OperationResult:
     db_appearance = db.query(models.Appearance).filter(models.Appearance.id == appearance_id).first()
-    if db_appearance:
-        db.delete(db_appearance)
-        db.commit()
-    return db_appearance
+    if not db_appearance:
+        return OperationResult(status=OperationStatus.NOT_FOUND)
+    db.delete(db_appearance)
+    db.commit()
+    return OperationResult(status=OperationStatus.SUCCESS)

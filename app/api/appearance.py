@@ -1,5 +1,5 @@
-from typing import List, Optional
 import logging
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
@@ -59,9 +59,9 @@ def get_appearances(
         db: Session = Depends(get_db)
 ):
     logger.info(f"Fetching appearances with page: {page}, page_size: {page_size}, search_query: {search_query}")
-    appearances = crud_appearance.get_appearances(db, page=page, page_size=page_size, search_query=search_query)
-    logger.info(f"Found {len(appearances)} appearances.")
-    return Response(data=appearances)
+    operation_result = crud_appearance.get_appearances(db, page=page, page_size=page_size, search_query=search_query)
+    logger.info(f"Found {len(operation_result.data)} appearances.")
+    return Response(data=operation_result.data)
 
 
 @router.put("/{appearance_id}", response_model=Response[schemas.Appearance])
@@ -92,8 +92,8 @@ def delete_appearance(
         current_user: models.User = Depends(require_admin)
 ):
     logger.info(f"User {current_user.email} is deleting appearance with ID: {appearance_id}")
-    db_appearance = crud_appearance.delete_appearance(db, appearance_id=appearance_id)
-    if db_appearance is None:
+    operation_result = crud_appearance.delete_appearance(db, appearance_id=appearance_id)
+    if operation_result.status == OperationStatus.NOT_FOUND:
         logger.warning(f"Appearance with ID {appearance_id} not found for deletion.")
         raise BusinessException(ResultCode.NOT_FOUND)
     logger.info(f"Appearance with ID {appearance_id} deleted successfully.")
