@@ -1,4 +1,5 @@
 from typing import List, Optional
+import logging
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
@@ -14,6 +15,7 @@ from app.crud import crud_appearance
 from app.db.database import get_db
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=Response[schemas.Appearance])
@@ -22,22 +24,30 @@ def create_appearance(
         db: Session = Depends(get_db),
         _: models.User = Depends(require_admin)
 ):
+    logger.info(f"User {_ .email} is creating a new appearance with name: {appearance.name}")
     operation_result = crud_appearance.create_appearance(db=db, appearance=appearance)
     if operation_result.status == OperationStatus.CONFLICT:
+        logger.warning(f"Appearance with name {appearance.name} already exists.")
         raise BusinessException(ResultCode.APPEARANCE_ALREADY_EXISTS)
 
     new_appearance = operation_result.data
+    logger.info(f"Appearance {new_appearance.name} created successfully with ID: {new_appearance.id}")
     return Response(data=new_appearance)
 
 
 @router.get("/{appearance_id}", response_model=Response[schemas.Appearance])
 def get_appearance(
         appearance_id: int,
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        _: models.User = Depends(require_admin)
 ):
+    logger.info(f"Fetching appearance with ID: {appearance_id}")
     operation_result = crud_appearance.get_appearance_by_id(db, appearance_id=appearance_id)
     if operation_result.status == OperationStatus.NOT_FOUND:
+        logger.warning(f"Appearance with ID {appearance_id} not found.")
         raise BusinessException(ResultCode.NOT_FOUND)
+
+    logger.info(f"Appearance with ID {appearance_id} fetched successfully.")
 
     return Response(data=operation_result.data)
 
@@ -47,9 +57,12 @@ def get_appearances(
         page: int = 1,
         page_size: int = 100,
         search_query: Optional[str] = None,
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        _: models.User = Depends(require_admin)
 ):
+    logger.info(f"Fetching appearances with page: {page}, page_size: {page_size}, search_query: {search_query}")
     appearances = crud_appearance.get_appearances(db, page=page, page_size=page_size, search_query=search_query)
+    logger.info(f"Found {len(appearances)} appearances.")
     return Response(data=appearances)
 
 
@@ -58,13 +71,18 @@ def update_appearance(
         appearance_id: int,
         appearance: schemas.AppearanceUpdate,
         db: Session = Depends(get_db),
-        _: models.User = Depends(require_admin)
+        current_user: models.User = Depends(require_admin)
 ):
+    logger.info(f"User {current_user.email} is updating appearance with ID: {appearance_id}")
     operation_result = crud_appearance.update_appearance(db, appearance_id=appearance_id, appearance=appearance)
     if operation_result.status == OperationStatus.CONFLICT:
+        logger.warning(f"Appearance with name {appearance.name} already exists.")
         raise BusinessException(ResultCode.APPEARANCE_ALREADY_EXISTS)
     elif operation_result.status == OperationStatus.NOT_FOUND:
+        logger.warning(f"Appearance with ID {appearance_id} not found.")
         raise BusinessException(ResultCode.NOT_FOUND)
+
+    logger.info(f"Appearance with ID {appearance_id} updated successfully.")
 
     return Response(data=operation_result.data)
 
@@ -73,9 +91,12 @@ def update_appearance(
 def delete_appearance(
         appearance_id: int,
         db: Session = Depends(get_db),
-        _: models.User = Depends(require_admin)
+        current_user: models.User = Depends(require_admin)
 ):
+    logger.info(f"User {current_user.email} is deleting appearance with ID: {appearance_id}")
     db_appearance = crud_appearance.delete_appearance(db, appearance_id=appearance_id)
     if db_appearance is None:
+        logger.warning(f"Appearance with ID {appearance_id} not found for deletion.")
         raise BusinessException(ResultCode.NOT_FOUND)
+    logger.info(f"Appearance with ID {appearance_id} deleted successfully.")
     return Response(message="Appearance deleted successfully")
