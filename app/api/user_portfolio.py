@@ -4,21 +4,21 @@ from fastapi import APIRouter, Depends
 from fastapi.params import Query
 from sqlalchemy.orm import Session
 
+import app.models as models
+import app.schemas as schemas
 from app.core.dependencies import get_current_user
 from app.core.response import Response
 from app.crud import crud_user_portfolio
 from app.db.database import get_db
-from app.models import User
-from app.schemas import UserPortfolio
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/portfolio", response_model=Response[UserPortfolio])
+@router.get("/portfolio", response_model=Response[schemas.UserPortfolio])
 def read_user_portfolio(
         db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user),
+        current_user: models.User = Depends(get_current_user),
         page: int = 1,
         page_size: int = 10,
         sort_by: str | None = Query(
