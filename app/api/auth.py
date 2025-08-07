@@ -3,6 +3,7 @@ import logging
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+import app.schemas as schemas
 from app.core.config import settings
 from app.core.exceptions import BusinessException
 from app.core.operation_result import OperationStatus
@@ -12,15 +13,14 @@ from app.core.security import verify_password
 from app.crud import crud_user
 from app.db.database import get_db
 from app.db.redis import redis_client
-from app.schemas import Token, UserCreate, UserLogin, TokenRefreshRequest
 from app.services import jwt_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=Response[Token])
-def register(user: UserCreate, db: Session = Depends(get_db)):
+@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=Response[schemas.Token])
+def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     logger.info(f"Registering user with email: {user.email}")
     operation_result = crud_user.get_user_by_email(db, email=str(user.email))
     if operation_result.status == OperationStatus.SUCCESS:
@@ -34,11 +34,11 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     access_token = jwt_service.create_access_token(data={"sub": new_user.email})
     refresh_token = jwt_service.create_refresh_token(data={"sub": new_user.email})
 
-    return Response(data=Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer"))
+    return Response(data=schemas.Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer"))
 
 
-@router.post("/login", response_model=Response[Token])
-def login(user: UserLogin, db: Session = Depends(get_db)):
+@router.post("/login", response_model=Response[schemas.Token])
+def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     logger.info(f"Login attempt for user: {user.email}")
     operation_result = crud_user.get_user_by_email(db, email=str(user.email))
     if operation_result.status == OperationStatus.SUCCESS:
@@ -74,11 +74,11 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     access_token = jwt_service.create_access_token(data={"sub": db_user.email})
     refresh_token = jwt_service.create_refresh_token(data={"sub": db_user.email})
 
-    return Response(data=Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer"))
+    return Response(data=schemas.Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer"))
 
 
-@router.post("/refresh", response_model=Response[Token])
-def refresh_token(request: TokenRefreshRequest, db: Session = Depends(get_db)):
+@router.post("/refresh", response_model=Response[schemas.Token])
+def refresh_token(request: schemas.TokenRefreshRequest, db: Session = Depends(get_db)):
     logger.info("Attempting to refresh token.")
     email = jwt_service.verify_token(request.refresh_token)
 
@@ -98,4 +98,4 @@ def refresh_token(request: TokenRefreshRequest, db: Session = Depends(get_db)):
     new_refresh_token = jwt_service.create_refresh_token(data={"sub": user.email})
     logger.info(f"Token refreshed successfully for user: {user.email}")
 
-    return Response(data=Token(access_token=access_token, refresh_token=new_refresh_token, token_type="bearer"))
+    return Response(data=schemas.Token(access_token=access_token, refresh_token=new_refresh_token, token_type="bearer"))
