@@ -27,14 +27,13 @@ def create_user_purchase_transaction(
         current_user: models.User = Depends(get_current_user)
 ):
     logger.info(f"User {current_user.email} is creating a new purchase transaction.")
-    new_purchase_transaction = crud_user_purchase_transaction.create_user_purchase_transaction(
+    operation_result = crud_user_purchase_transaction.create_user_purchase_transaction(
         db=db,
         user_id=current_user.id,
         purchase_transaction=purchase_transaction
     )
-    logger.info(
-        f"Purchase transaction {new_purchase_transaction.id} created successfully for user {current_user.email}.")
-    return Response(data=new_purchase_transaction)
+    logger.info(f"Purchase transaction {operation_result.data.id} created successfully for user {current_user.email}.")
+    return Response(data=operation_result.data)
 
 
 @router.get("/{transaction_id}", response_model=Response[schemas.UserPurchaseTransaction])
@@ -43,16 +42,16 @@ def get_user_purchase_transaction(
         db: Session = Depends(get_db),
         current_user: models.User = Depends(get_current_user)
 ):
-    db_transaction = crud_user_purchase_transaction.get_user_purchase_transaction_by_id(
+    operation_result = crud_user_purchase_transaction.get_user_purchase_transaction_by_id(
         db=db,
         user_id=current_user.id,
         transaction_id=transaction_id
     )
 
-    if not db_transaction:
+    if operation_result.status == OperationStatus.NOT_FOUND:
         raise BusinessException(ResultCode.NOT_FOUND)
 
-    return Response(data=schemas.UserPurchaseTransaction.model_validate(db_transaction))
+    return Response(data=operation_result.data)
 
 
 @router.get("", response_model=Response[List[schemas.UserPurchaseTransaction]])
@@ -65,7 +64,7 @@ def get_user_purchase_transactions(
         db: Session = Depends(get_db),
         current_user: models.User = Depends(get_current_user)
 ):
-    transactions = crud_user_purchase_transaction.get_user_purchase_transactions(
+    operation_result = crud_user_purchase_transaction.get_user_purchase_transactions(
         db=db,
         user_id=current_user.id,
         page=page,
@@ -75,7 +74,7 @@ def get_user_purchase_transactions(
         end_date=end_date
     )
 
-    return Response(data=transactions)
+    return Response(data=operation_result.data)
 
 
 @router.put("/{transaction_id}", response_model=Response[schemas.UserPurchaseTransaction])
