@@ -4,8 +4,8 @@ from .appearance_type import AppearanceType, AppearanceTypeCreate, AppearanceTyp
 from .platform import Platform, PlatformCreate, PlatformUpdate
 from .platform_appearance_relation import PlatformAppearanceRelation, PlatformAppearanceRelationCreate
 from .platform_price_history import PlatformPriceHistory, PlatformPriceHistoryCreate, PlatformPriceHistoryPoint
-from .token import Token, TokenRefreshRequest
-from .user import UserCreate, UserLogin
+from .token import Token, TokenRefreshRequest, UserWithToken
+from .user import User, UserCreate, UserLogin, UserPublic
 from .user_portfolio import UserPortfolio, UserPortfolioItem
 from .user_purchase_transaction import UserPurchaseTransaction, UserPurchaseTransactionCreate, \
     UserPurchaseTransactionUpdate
@@ -40,10 +40,13 @@ __all__ = [
     # Token / Auth
     "Token",
     "TokenRefreshRequest",
+    "UserWithToken",
 
     # User
+    "User",
     "UserCreate",
     "UserLogin",
+    "UserPublic",
     "UserStats",
 
     # Portfolio
