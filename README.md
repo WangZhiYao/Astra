@@ -16,6 +16,8 @@ interest.
 * **Platform Management**: APIs for managing different platforms.
 * **User Transaction Tracking**: Record and manage user purchase and sale transactions for appearances.
 * **Watchlist Functionality**: Users can create watchlists and add/remove specific appearance items to track.
+* **User Portfolio Management**: Users can view their portfolio of appearances, including quantity, average cost, total investment, current market value, and profit/loss.
+* **User Portfolio Statistics**: Users can view their portfolio statistics, including total investment, current market value, and estimated and realized profit/loss.
 * **Admin Privileges**: Role-based access control for administrative operations.
 * **Redis Integration**: Used for caching and managing login attempt limits.
 * **PostgreSQL Database**: Persistent storage for all application data.
@@ -127,14 +129,17 @@ The API will be accessible at `http://localhost:8000`. You can access the intera
 The main API endpoints are organized as follows:
 
 * `/auth`: User registration, login, and token refresh.
+* `/me/stats`: Get user statistics.
+* `/me/portfolio`: Get user portfolio.
 * `/appearances`: Manage appearances.
 * `/appearance-types`: Manage appearance types.
 * `/appearance-aliases`: Manage appearance aliases.
 * `/platforms`: Manage platforms.
+* `/platform-price-histories`: Manage platform price histories.
 * `/user-purchase-transactions`: Record user purchase transactions.
 * `/user-sale-transactions`: Record user sale transactions.
 * `/watchlists`: Manage user watchlists.
-* `/watchlist-items`: Manage items within watchlists.
+* `/watchlists/{watchlist_id}/items`: Manage items within watchlists.
 
 Refer to the interactive API documentation at `/docs` for detailed endpoint information, request/response schemas, and
 try-it-out functionality.
