@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
@@ -9,6 +8,7 @@ import app.schemas as schemas
 from app.core.dependencies import require_admin
 from app.core.exceptions import BusinessException
 from app.core.operation_result import OperationStatus
+from app.core.paging import PagingData
 from app.core.response import Response
 from app.core.result_codes import ResultCode
 from app.crud import crud_platform
@@ -49,7 +49,7 @@ def get_platform(
     return Response(data=operation_result.data)
 
 
-@router.get("", response_model=Response[List[schemas.Platform]])
+@router.get("", response_model=Response[PagingData[schemas.Platform]])
 def get_platforms(
         page: int = 1,
         page_size: int = 100,
@@ -57,7 +57,7 @@ def get_platforms(
 ):
     logger.info(f"Fetching platforms with page: {page}, page_size: {page_size}")
     operation_result = crud_platform.get_platforms(db, page=page, page_size=page_size)
-    logger.info(f"Found {len(operation_result.data)} platforms.")
+    logger.info(f"Found {len(operation_result.data.items)} platforms, total: {operation_result.data.total_count}")
     return Response(data=operation_result.data)
 
 

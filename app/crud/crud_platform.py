@@ -1,10 +1,9 @@
-from typing import List
-
 from sqlalchemy.orm import Session
 
 import app.models as models
 import app.schemas as schemas
 from app.core.operation_result import OperationResult, OperationStatus
+from app.core.paging import PagingData
 
 
 def _get_platform_by_name(db: Session, name: str):
@@ -32,11 +31,29 @@ def get_platform_by_id(db: Session, platform_id: int) -> OperationResult[schemas
     return OperationResult(status=OperationStatus.SUCCESS, data=schemas.Platform.model_validate(db_platform))
 
 
-def get_platforms(db: Session, page: int = 1, page_size: int = 100) -> OperationResult[List[schemas.Platform]]:
+def get_platforms(db: Session, page: int = 1, page_size: int = 100) -> OperationResult[PagingData[schemas.Platform]]:
+    total_count = db.query(models.Platform).count()
+    if total_count == 0:
+        return OperationResult(
+            status=OperationStatus.SUCCESS,
+            data=PagingData(items=[], total_count=0)
+        )
+
     offset = (page - 1) * page_size
-    db_platforms = db.query(models.Platform).offset(offset).limit(page_size).all()
-    data = [schemas.Platform.model_validate(db_platform) for db_platform in db_platforms]
-    return OperationResult(status=OperationStatus.SUCCESS, data=data)
+    db_platforms = (
+        db.query(models.Platform)
+        .order_by(models.Platform.id)
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
+
+    items = [schemas.Platform.model_validate(db_platform) for db_platform in db_platforms]
+
+    return OperationResult(
+        status=OperationStatus.SUCCESS,
+        data=PagingData(items=items, total_count=total_count)
+    )
 
 
 def update_platform(
