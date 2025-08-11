@@ -1,11 +1,12 @@
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 import app.models as models
 import app.schemas as schemas
 from app.core.operation_result import OperationResult, OperationStatus
+from app.core.paging import PagingData
 
 
 def create_user_purchase_transaction(
@@ -37,8 +38,10 @@ def get_user_purchase_transaction_by_id(
     ).first()
     if not db_transaction:
         return OperationResult(status=OperationStatus.NOT_FOUND)
-    return OperationResult(status=OperationStatus.SUCCESS,
-                           data=schemas.UserPurchaseTransaction.model_validate(db_transaction))
+    return OperationResult(
+        status=OperationStatus.SUCCESS,
+        data=schemas.UserPurchaseTransaction.model_validate(db_transaction)
+    )
 
 
 def get_user_purchase_transactions(
@@ -49,24 +52,48 @@ def get_user_purchase_transactions(
         appearance_id: Optional[int] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None
-) -> OperationResult[List[schemas.UserPurchaseTransaction]]:
-    query = db.query(models.UserPurchaseTransaction).options(
-        joinedload(models.UserPurchaseTransaction.appearance),
-        joinedload(models.UserPurchaseTransaction.platform)
-    ).filter(models.UserPurchaseTransaction.user_id == user_id)
+) -> OperationResult[PagingData[schemas.UserPurchaseTransaction]]:
+    base_query = (
+        db.query(models.UserPurchaseTransaction)
+        .options(
+            selectinload(models.UserPurchaseTransaction.appearance),
+            selectinload(models.UserPurchaseTransaction.platform)
+        )
+        .filter(models.UserPurchaseTransaction.user_id == user_id)
+    )
 
     if appearance_id:
-        query = query.filter(models.UserPurchaseTransaction.appearance_id == appearance_id)
+        base_query = base_query.filter(models.UserPurchaseTransaction.appearance_id == appearance_id)
     if start_date:
-        query = query.filter(models.UserPurchaseTransaction.purchased_at >= start_date)
+        base_query = base_query.filter(models.UserPurchaseTransaction.purchased_at >= start_date)
     if end_date:
-        query = query.filter(models.UserPurchaseTransaction.purchased_at <= end_date)
+        base_query = base_query.filter(models.UserPurchaseTransaction.purchased_at <= end_date)
+
+    total_count = base_query.count()
+
+    if total_count == 0:
+        return OperationResult(
+            status=OperationStatus.SUCCESS,
+            data=PagingData(items=[], total_count=0)
+        )
 
     offset = (page - 1) * page_size
-    db_purchase_transactions = query.offset(offset).limit(page_size).all()
-    data = [schemas.UserPurchaseTransaction.model_validate(db_purchase_transaction) for db_purchase_transaction in
-            db_purchase_transactions]
-    return OperationResult(status=OperationStatus.SUCCESS, data=data)
+    db_purchase_transactions = (
+        base_query.order_by(models.UserPurchaseTransaction.purchased_at.desc())
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
+
+    items = [
+        schemas.UserPurchaseTransaction.model_validate(db_purchase_transaction)
+        for db_purchase_transaction in db_purchase_transactions
+    ]
+
+    return OperationResult(
+        status=OperationStatus.SUCCESS,
+        data=PagingData(items=items, total_count=total_count)
+    )
 
 
 def update_user_purchase_transaction(
