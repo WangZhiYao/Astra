@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
@@ -9,6 +9,7 @@ import app.schemas as schemas
 from app.core.dependencies import require_admin
 from app.core.exceptions import BusinessException
 from app.core.operation_result import OperationStatus
+from app.core.paging import PagingData
 from app.core.response import Response
 from app.core.result_codes import ResultCode
 from app.crud import crud_appearance
@@ -24,7 +25,7 @@ def create_appearance(
         db: Session = Depends(get_db),
         _: models.User = Depends(require_admin)
 ):
-    logger.info(f"User {_ .email} is creating a new appearance with name: {appearance.name}")
+    logger.info(f"User {_.email} is creating a new appearance with name: {appearance.name}")
     operation_result = crud_appearance.create_appearance(db=db, appearance=appearance)
     if operation_result.status == OperationStatus.CONFLICT:
         logger.warning(f"Appearance with name {appearance.name} already exists.")
@@ -51,7 +52,7 @@ def get_appearance(
     return Response(data=operation_result.data)
 
 
-@router.get("", response_model=Response[List[schemas.Appearance]])
+@router.get("", response_model=Response[PagingData[schemas.Appearance]])
 def get_appearances(
         page: int = 1,
         page_size: int = 100,
@@ -60,7 +61,7 @@ def get_appearances(
 ):
     logger.info(f"Fetching appearances with page: {page}, page_size: {page_size}, search_query: {search_query}")
     operation_result = crud_appearance.get_appearances(db, page=page, page_size=page_size, search_query=search_query)
-    logger.info(f"Found {len(operation_result.data)} appearances.")
+    logger.info(f"Found {len(operation_result.data.items)} appearances, total: {operation_result.data.total_count}")
     return Response(data=operation_result.data)
 
 
