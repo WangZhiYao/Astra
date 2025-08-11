@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
@@ -9,6 +8,7 @@ import app.schemas as schemas
 from app.core.dependencies import get_current_user
 from app.core.exceptions import BusinessException
 from app.core.operation_result import OperationStatus
+from app.core.paging import PagingData
 from app.core.response import Response
 from app.core.result_codes import ResultCode
 from app.crud import crud_watchlist_item
@@ -45,11 +45,11 @@ def create_watchlist_item(
     return Response(data=operation_result.data)
 
 
-@router.get("", response_model=Response[List[schemas.WatchlistItem]])
+@router.get("", response_model=Response[PagingData[schemas.WatchlistItem]])
 def get_watchlist_items(
         watchlist_id: int,
         page: int = 1,
-        page_size: int = 100,
+        page_size: int = 20,
         db: Session = Depends(get_db),
         current_user: models.User = Depends(get_current_user)
 ):
@@ -65,7 +65,7 @@ def get_watchlist_items(
         logger.warning(f"Watchlist with ID {watchlist_id} not found for user {current_user.email}.")
         raise BusinessException(ResultCode.WATCHLIST_NOT_EXISTS)
 
-    logger.info(f"Found {len(operation_result.data)} items in watchlist {watchlist_id}.")
+    logger.info(f"Found {len(operation_result.data.items)} items in watchlist {watchlist_id}, total: {operation_result.data.total_count}")
     return Response(data=operation_result.data)
 
 

@@ -1,10 +1,11 @@
 from typing import List
 
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 import app.models as models
 import app.schemas as schemas
 from app.core.operation_result import OperationResult, OperationStatus
+from app.core.paging import PagingData
 from app.crud.crud_watchlist import get_watchlist_by_user
 
 
@@ -21,12 +22,16 @@ def get_watchlist_items_by_watchlist_id(
         watchlist_id: int,
         page: int,
         page_size: int
-) -> OperationResult[List[schemas.WatchlistItem]]:
+) -> OperationResult[PagingData[schemas.WatchlistItem]]:
     # First, check if the watchlist exists and belongs to the user.
-    watchlist = db.query(models.Watchlist).filter(
-        models.Watchlist.user_id == user_id,
-        models.Watchlist.id == watchlist_id
-    ).first()
+    watchlist = (
+        db.query(models.Watchlist)
+        .filter(
+            models.Watchlist.user_id == user_id,
+            models.Watchlist.id == watchlist_id
+        )
+        .first()
+    )
     if not watchlist:
         return OperationResult(status=OperationStatus.NOT_FOUND)
 
@@ -34,17 +39,28 @@ def get_watchlist_items_by_watchlist_id(
     query = (
         db.query(models.WatchlistItem)
         .options(
-            joinedload(models.WatchlistItem.appearance).selectinload(models.Appearance.appearance_aliases),
-            joinedload(models.WatchlistItem.appearance).selectinload(models.Appearance.appearance_types)
+            selectinload(models.WatchlistItem.appearance).selectinload(models.Appearance.appearance_aliases),
+            selectinload(models.WatchlistItem.appearance).selectinload(models.Appearance.appearance_types)
         )
         .filter(models.WatchlistItem.watchlist_id == watchlist_id)
     )
 
-    offset = (page - 1) * page_size
-    db_watchlist_items = query.offset(offset).limit(page_size).all()
+    total_count = query.count()
 
-    data = [schemas.WatchlistItem.model_validate(item) for item in db_watchlist_items]
-    return OperationResult(status=OperationStatus.SUCCESS, data=data)
+    offset = (page - 1) * page_size
+    db_watchlist_items = (
+        query.order_by(models.WatchlistItem.id)
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
+
+    items = [schemas.WatchlistItem.model_validate(item) for item in db_watchlist_items]
+
+    return OperationResult(
+        status=OperationStatus.SUCCESS,
+        data=PagingData(items=items, total_count=total_count)
+    )
 
 
 def create_watchlist_item(
