@@ -11,7 +11,7 @@ class Watchlist(Base):
     id = Column(BigInteger, primary_key=True, index=True)
     user_id = Column(BigInteger, ForeignKey('users.id'), nullable=False, index=True)
     name = Column(String(100), nullable=False)
-    description = Column(Text, nullable=True)
+    notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
