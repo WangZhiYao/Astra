@@ -1,10 +1,9 @@
-from typing import List
-
 from sqlalchemy.orm import Session
 
 import app.models as models
 import app.schemas as schemas
 from app.core.operation_result import OperationResult, OperationStatus
+from app.core.paging import PagingData
 
 
 def _get_appearance_type_by_name(db: Session, name: str):
@@ -37,11 +36,29 @@ def get_appearance_types(
         db: Session,
         page: int = 1,
         page_size: int = 100
-) -> OperationResult[List[schemas.AppearanceType]]:
+) -> OperationResult[PagingData[schemas.AppearanceType]]:
+    total_count = db.query(models.AppearanceType).count()
+    if total_count == 0:
+        return OperationResult(
+            status=OperationStatus.SUCCESS,
+            data=PagingData(items=[], total_count=0)
+        )
+
     offset = (page - 1) * page_size
-    db_appearance_types = db.query(models.AppearanceType).offset(offset).limit(page_size).all()
-    data = [schemas.AppearanceType.model_validate(db_appearance_type) for db_appearance_type in db_appearance_types]
-    return OperationResult(status=OperationStatus.SUCCESS, data=data)
+    db_appearance_types = (
+        db.query(models.AppearanceType)
+        .order_by(models.AppearanceType.id)
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
+
+    items = [schemas.AppearanceType.model_validate(db_appearance_type) for db_appearance_type in db_appearance_types]
+
+    return OperationResult(
+        status=OperationStatus.SUCCESS,
+        data=PagingData(items=items, total_count=total_count)
+    )
 
 
 def update_appearance_type(

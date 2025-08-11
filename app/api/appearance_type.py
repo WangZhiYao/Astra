@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
@@ -9,6 +8,7 @@ import app.schemas as schemas
 from app.core.dependencies import require_admin
 from app.core.exceptions import BusinessException
 from app.core.operation_result import OperationStatus
+from app.core.paging import PagingData
 from app.core.response import Response
 from app.core.result_codes import ResultCode
 from app.crud import crud_appearance_type
@@ -35,7 +35,7 @@ def create_appearance_type(
     return Response(data=operation_result.data)
 
 
-@router.get("", response_model=Response[List[schemas.AppearanceType]])
+@router.get("", response_model=Response[PagingData[schemas.AppearanceType]])
 def get_appearance_types(
         page: int = 1,
         page_size: int = 100,
@@ -43,7 +43,8 @@ def get_appearance_types(
 ):
     logger.info(f"Fetching appearance types with page: {page}, page_size: {page_size}")
     operation_result = crud_appearance_type.get_appearance_types(db, page=page, page_size=page_size)
-    logger.info(f"Found {len(operation_result.data)} appearance types.")
+    logger.info(
+        f"Found {len(operation_result.data.items)} appearance types, total: {operation_result.data.total_count}")
     return Response(data=operation_result.data)
 
 
