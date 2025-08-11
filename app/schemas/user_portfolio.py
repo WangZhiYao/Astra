@@ -17,8 +17,3 @@ class UserPortfolioItem(BaseModel):
     profit_loss: float
     profit_loss_percentage: float
     price_histories: List[PlatformPriceHistoryPoint] = []
-
-
-class UserPortfolio(BaseModel):
-    total: int
-    items: List[UserPortfolioItem]

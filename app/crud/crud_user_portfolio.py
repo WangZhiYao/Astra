@@ -8,6 +8,7 @@ import app.models as models
 import app.schemas as schemas
 from app.core.config import settings
 from app.core.operation_result import OperationResult, OperationStatus
+from app.core.paging import PagingData
 
 
 def get_user_portfolio(
@@ -17,7 +18,7 @@ def get_user_portfolio(
         page_size: int,
         sort_by: str | None = None,
         sort_order: str = 'desc'
-) -> OperationResult[schemas.UserPortfolio]:
+) -> OperationResult[PagingData[schemas.UserPortfolioItem]]:
     # 1. 购买数据子查询
     purchase_subquery = (
         db.query(
@@ -76,10 +77,13 @@ def get_user_portfolio(
     )
 
     # 6. 获取总数
-    total = base_query.count()
+    total_count = base_query.count()
 
-    if total == 0:
-        return OperationResult(status=OperationStatus.SUCCESS, data=schemas.UserPortfolio(total=0, items=[]))
+    if total_count == 0:
+        return OperationResult(
+            status=OperationStatus.SUCCESS,
+            data=PagingData(items=[], total_count=0)
+        )
 
     # 7. 主查询
     query = (
@@ -146,7 +150,7 @@ def get_user_portfolio(
             )
         )
 
-    return OperationResult(status=OperationStatus.SUCCESS, data=schemas.UserPortfolio(total=total, items=items))
+    return OperationResult(status=OperationStatus.SUCCESS, data=PagingData(items=items, total_count=total_count))
 
 
 def _get_price_histories_batch(

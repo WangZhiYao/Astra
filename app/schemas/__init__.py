@@ -6,7 +6,7 @@ from .platform_appearance_relation import PlatformAppearanceRelation, PlatformAp
 from .platform_price_history import PlatformPriceHistory, PlatformPriceHistoryCreate, PlatformPriceHistoryPoint
 from .token import Token, TokenRefreshRequest, UserWithToken
 from .user import User, UserCreate, UserLogin, UserPublic
-from .user_portfolio import UserPortfolio, UserPortfolioItem
+from .user_portfolio import UserPortfolioItem
 from .user_purchase_transaction import UserPurchaseTransaction, UserPurchaseTransactionCreate, \
     UserPurchaseTransactionUpdate
 from .user_sale_transaction import UserSaleTransaction, UserSaleTransactionCreate, UserSaleTransactionUpdate
@@ -50,7 +50,6 @@ __all__ = [
     "UserStats",
 
     # Portfolio
-    "UserPortfolio",
     "UserPortfolioItem",
 
     # Transactions

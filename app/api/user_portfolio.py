@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 import app.models as models
 import app.schemas as schemas
 from app.core.dependencies import get_current_user
+from app.core.paging import PagingData
 from app.core.response import Response
 from app.crud import crud_user_portfolio
 from app.db.database import get_db
@@ -15,7 +16,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/portfolio", response_model=Response[schemas.UserPortfolio])
+@router.get("/portfolio", response_model=Response[PagingData[schemas.UserPortfolioItem]])
 def read_user_portfolio(
         db: Session = Depends(get_db),
         current_user: models.User = Depends(get_current_user),
@@ -34,6 +35,5 @@ def read_user_portfolio(
         sort_by=sort_by,
         sort_order=sort_order
     )
-    logger.info(
-        f"User {current_user.email} portfolio fetched successfully with {len(operation_result.data.items)} items.")
+    logger.info(f"User {current_user.email} portfolio fetched successfully with {len(operation_result.data.items)} items, total: {operation_result.data.total_count}")
     return Response(data=operation_result.data)
