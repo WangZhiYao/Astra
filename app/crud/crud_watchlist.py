@@ -1,3 +1,5 @@
+from typing import List
+
 from sqlalchemy.orm import Session
 
 import app.models as models
@@ -34,7 +36,7 @@ def create_watchlist(
     return OperationResult(status=OperationStatus.SUCCESS, data=schemas.Watchlist.model_validate(db_watchlist))
 
 
-def get_watchlists_by_user(db: Session, user_id: int) -> OperationResult[list[schemas.Watchlist]]:
+def get_watchlists_by_user(db: Session, user_id: int) -> OperationResult[List[schemas.Watchlist]]:
     db_watchlists = db.query(models.Watchlist).filter(models.Watchlist.user_id == user_id).all()
     data = [schemas.Watchlist.model_validate(db_watchlist) for db_watchlist in db_watchlists]
     return OperationResult(status=OperationStatus.SUCCESS, data=data)
