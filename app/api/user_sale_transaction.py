@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
@@ -10,6 +10,7 @@ import app.schemas as schemas
 from app.core.dependencies import get_current_user
 from app.core.exceptions import BusinessException
 from app.core.operation_result import OperationStatus
+from app.core.paging import PagingData
 from app.core.response import Response
 from app.core.result_codes import ResultCode
 from app.crud import crud_user_sale_transaction
@@ -54,7 +55,7 @@ def get_user_sale_transaction(
     return Response(data=operation_result.data)
 
 
-@router.get("", response_model=Response[List[schemas.UserSaleTransaction]])
+@router.get("", response_model=Response[PagingData[schemas.UserSaleTransaction]])
 def get_user_sale_transactions(
         page: int = 1,
         page_size: int = 100,

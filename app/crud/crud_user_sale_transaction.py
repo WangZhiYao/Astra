@@ -1,11 +1,12 @@
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 import app.models as models
 import app.schemas as schemas
 from app.core.operation_result import OperationResult, OperationStatus
+from app.core.paging import PagingData
 
 
 def create_user_sale_transaction(
@@ -53,24 +54,48 @@ def get_user_sale_transactions(
         appearance_id: Optional[int] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None
-) -> OperationResult[List[schemas.UserSaleTransaction]]:
-    query = db.query(models.UserSaleTransaction).options(
-        joinedload(models.UserSaleTransaction.appearance),
-        joinedload(models.UserSaleTransaction.platform)
-    ).filter(models.UserSaleTransaction.user_id == user_id)
+) -> OperationResult[PagingData[schemas.UserSaleTransaction]]:
+    base_query = (
+        db.query(models.UserSaleTransaction)
+        .options(
+            selectinload(models.UserSaleTransaction.appearance),
+            selectinload(models.UserSaleTransaction.platform)
+        )
+        .filter(models.UserSaleTransaction.user_id == user_id)
+    )
 
     if appearance_id:
-        query = query.filter(models.UserSaleTransaction.appearance_id == appearance_id)
+        base_query = base_query.filter(models.UserSaleTransaction.appearance_id == appearance_id)
     if start_date:
-        query = query.filter(models.UserSaleTransaction.sold_at >= start_date)
+        base_query = base_query.filter(models.UserSaleTransaction.sold_at >= start_date)
     if end_date:
-        query = query.filter(models.UserSaleTransaction.sold_at <= end_date)
+        base_query = base_query.filter(models.UserSaleTransaction.sold_at <= end_date)
+
+    total_count = base_query.count()
+
+    if total_count == 0:
+        return OperationResult(
+            status=OperationStatus.SUCCESS,
+            data=PagingData(items=[], total_count=0)
+        )
 
     offset = (page - 1) * page_size
-    db_sale_transactions = query.offset(offset).limit(page_size).all()
-    data = [schemas.UserSaleTransaction.model_validate(db_sale_transaction) for db_sale_transaction in
-            db_sale_transactions]
-    return OperationResult(status=OperationStatus.SUCCESS, data=data)
+    db_sale_transactions = (
+        base_query.order_by(models.UserSaleTransaction.sold_at.desc())
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
+
+    items = [
+        schemas.UserSaleTransaction.model_validate(db_sale_transaction)
+        for db_sale_transaction in db_sale_transactions
+    ]
+
+    return OperationResult(
+        status=OperationStatus.SUCCESS,
+        data=PagingData(items=items, total_count=total_count)
+    )
 
 
 def update_user_sale_transaction(
