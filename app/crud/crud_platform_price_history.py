@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 import app.models as models
 import app.schemas as schemas
 from app.core.operation_result import OperationResult, OperationStatus
+from app.core.paging import PagingData
 
 
 def create_platform_price_histories(
@@ -23,19 +24,40 @@ def get_platform_price_histories(
         page_size: int = 100,
         platform_id: Optional[int] = None,
         appearance_id: Optional[int] = None
-) -> OperationResult[List[schemas.PlatformPriceHistory]]:
-    query = db.query(models.PlatformPriceHistory)
+) -> OperationResult[PagingData[schemas.PlatformPriceHistory]]:
+    base_query = db.query(models.PlatformPriceHistory)
 
     if platform_id:
-        query = query.filter(models.PlatformPriceHistory.platform_id == platform_id)
+        base_query = base_query.filter(models.PlatformPriceHistory.platform_id == platform_id)
     if appearance_id:
-        query = query.filter(models.PlatformPriceHistory.appearance_id == appearance_id)
+        base_query = base_query.filter(models.PlatformPriceHistory.appearance_id == appearance_id)
+
+    total_count = base_query.count()
+
+    if total_count == 0:
+        return OperationResult(
+            status=OperationStatus.SUCCESS,
+            data=PagingData(items=[], total_count=0)
+        )
 
     offset = (page - 1) * page_size
-    db_platform_price_histories = query.offset(offset).limit(page_size).all()
-    data = [schemas.PlatformPriceHistory.model_validate(db_platform_price_history) for db_platform_price_history in
-            db_platform_price_histories]
-    return OperationResult(status=OperationStatus.SUCCESS, data=data)
+    db_platform_price_histories = (
+        base_query
+        .order_by(models.PlatformPriceHistory.crawled_at.desc())
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
+
+    items = [
+        schemas.PlatformPriceHistory.model_validate(db_platform_price_history)
+        for db_platform_price_history in db_platform_price_histories
+    ]
+
+    return OperationResult(
+        status=OperationStatus.SUCCESS,
+        data=PagingData(items=items, total_count=total_count)
+    )
 
 
 def delete_platform_price_history(db: Session, platform_price_history_id: int) -> OperationResult:

@@ -9,6 +9,7 @@ import app.schemas as schemas
 from app.core.dependencies import require_admin
 from app.core.exceptions import BusinessException
 from app.core.operation_result import OperationStatus
+from app.core.paging import PagingData
 from app.core.response import Response
 from app.core.result_codes import ResultCode
 from app.crud import crud_platform_price_history
@@ -30,7 +31,7 @@ def create_platform_price_histories(
     return Response(message=f"Successfully created {operation_result.data} platform price histories.")
 
 
-@router.get("", response_model=Response[List[schemas.PlatformPriceHistory]])
+@router.get("", response_model=Response[PagingData[schemas.PlatformPriceHistory]])
 def get_platform_price_histories(
         page: int = 1,
         page_size: int = 100,
@@ -46,7 +47,8 @@ def get_platform_price_histories(
         platform_id=platform_id,
         appearance_id=appearance_id
     )
-    logger.info(f"Found {len(operation_result.data)} platform price histories.")
+    logger.info(
+        f"Found {len(operation_result.data.items)} platform price histories, total: {operation_result.data.total_count}")
     return Response(data=operation_result.data)
 
 
