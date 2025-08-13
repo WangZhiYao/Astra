@@ -43,7 +43,7 @@ def get_platform_price_histories(
     offset = (page - 1) * page_size
     db_platform_price_histories = (
         base_query
-        .order_by(models.PlatformPriceHistory.crawled_at.desc())
+        .order_by(models.PlatformPriceHistory.recorded_at.desc())
         .offset(offset)
         .limit(page_size)
         .all()

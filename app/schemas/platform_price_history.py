@@ -11,7 +11,7 @@ class PlatformPriceHistoryBase(BaseModel):
     platform_id: int
     lowest_price_cents: int
     quantity_on_sale: Optional[int] = None
-    crawled_at: datetime
+    recorded_at: datetime
 
 
 class PlatformPriceHistoryCreate(PlatformPriceHistoryBase):
@@ -30,4 +30,4 @@ class PlatformPriceHistoryPoint(BaseModel):
     platform: Platform
     lowest_price_cents: float
     quantity_on_sale: Optional[int] = None
-    crawled_at: datetime
+    recorded_at: datetime

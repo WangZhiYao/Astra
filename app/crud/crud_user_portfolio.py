@@ -53,7 +53,7 @@ def get_user_portfolio(
         .distinct(models.PlatformPriceHistory.appearance_id)
         .order_by(
             models.PlatformPriceHistory.appearance_id,
-            models.PlatformPriceHistory.crawled_at.desc()
+            models.PlatformPriceHistory.recorded_at.desc()
         )
         .subquery('latest_price_subquery')
     )
@@ -168,10 +168,10 @@ def _get_price_histories_batch(
             models.PlatformPriceHistory.platform_id,
             models.PlatformPriceHistory.lowest_price_cents,
             models.PlatformPriceHistory.quantity_on_sale,
-            models.PlatformPriceHistory.crawled_at,
+            models.PlatformPriceHistory.recorded_at,
             func.row_number().over(
                 partition_by=models.PlatformPriceHistory.appearance_id,
-                order_by=models.PlatformPriceHistory.crawled_at.desc()
+                order_by=models.PlatformPriceHistory.recorded_at.desc()
             ).label('rn')
         )
         .filter(models.PlatformPriceHistory.appearance_id.in_(appearance_ids))
@@ -184,7 +184,7 @@ def _get_price_histories_batch(
         .filter(price_history_subquery.c.rn <= limit)
         .order_by(
             price_history_subquery.c.appearance_id,
-            price_history_subquery.c.crawled_at.desc()
+            price_history_subquery.c.recorded_at.desc()
         )
         .all()
     )
@@ -196,7 +196,7 @@ def _get_price_histories_batch(
                 platform=schemas.Platform.model_validate(platform_obj),
                 lowest_price_cents=row.lowest_price_cents,
                 quantity_on_sale=row.quantity_on_sale,
-                crawled_at=row.crawled_at,
+                recorded_at=row.recorded_at,
             )
         )
 

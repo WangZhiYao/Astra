@@ -60,7 +60,7 @@ CREATE TABLE platform_price_history
     platform_id        INTEGER     NOT NULL,
     lowest_price_cents BIGINT      NOT NULL,
     quantity_on_sale   INTEGER,
-    crawled_at         TIMESTAMPTZ NOT NULL,
+    recorded_at         TIMESTAMPTZ NOT NULL,
     CONSTRAINT fk_platform_price_history_appearance FOREIGN KEY (appearance_id) REFERENCES appearances (id) ON DELETE CASCADE,
     CONSTRAINT fk_platform_price_history_platform FOREIGN KEY (platform_id) REFERENCES platforms (id) ON DELETE RESTRICT
 );
@@ -141,9 +141,9 @@ CREATE INDEX idx_appearance_aliases_alias_name ON appearance_aliases (alias_name
 CREATE INDEX idx_appearance_type_relations_type_appearance ON appearance_type_relations (appearance_type_id, appearance_id);
 CREATE INDEX idx_appearances_name ON appearances (name);
 CREATE INDEX idx_platform_appearance_relations_appearance ON platform_appearance_relations (appearance_id);
-CREATE INDEX idx_platform_price_history_appearance_crawled ON platform_price_history (appearance_id, crawled_at DESC);
-CREATE INDEX idx_platform_price_history_crawled ON platform_price_history (crawled_at DESC);
-CREATE INDEX idx_platform_price_history_platform_crawled ON platform_price_history (platform_id, crawled_at DESC);
+CREATE INDEX idx_platform_price_history_appearance_recorded ON platform_price_history (appearance_id, recorded_at DESC);
+CREATE INDEX idx_platform_price_history_recorded ON platform_price_history (recorded_at DESC);
+CREATE INDEX idx_platform_price_history_platform_recorded ON platform_price_history (platform_id, recorded_at DESC);
 CREATE INDEX idx_user_purchase_transactions_appearance ON user_purchase_transactions (appearance_id);
 CREATE INDEX idx_user_purchase_transactions_purchased ON user_purchase_transactions (purchased_at DESC);
 CREATE INDEX idx_user_purchase_transactions_user_appearance ON user_purchase_transactions (user_id, appearance_id);

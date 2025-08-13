@@ -51,14 +51,14 @@ def get_user_stats(db: Session, user_id: int) -> OperationResult[schemas.UserSta
     # 5. Get the latest price for each appearance
     latest_prices = db.query(
         models.PlatformPriceHistory.appearance_id,
-        func.max(models.PlatformPriceHistory.crawled_at).label("max_crawled_at")
+        func.max(models.PlatformPriceHistory.recorded_at).label("max_recorded_at")
     ).group_by(models.PlatformPriceHistory.appearance_id).subquery()
 
     current_prices = db.query(
         models.PlatformPriceHistory.appearance_id,
         models.PlatformPriceHistory.lowest_price_cents
     ).join(latest_prices, (models.PlatformPriceHistory.appearance_id == latest_prices.c.appearance_id) &
-           (models.PlatformPriceHistory.crawled_at == latest_prices.c.max_crawled_at)).subquery()
+           (models.PlatformPriceHistory.recorded_at == latest_prices.c.max_recorded_at)).subquery()
 
     # 6. Calculate total investment and market value for holdings
     stats = db.query(

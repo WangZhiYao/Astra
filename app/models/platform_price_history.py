@@ -12,7 +12,7 @@ class PlatformPriceHistory(Base):
     platform_id = Column(Integer, ForeignKey('platforms.id'), nullable=False)
     lowest_price_cents = Column(BigInteger, nullable=False)
     quantity_on_sale = Column(Integer)
-    crawled_at = Column(DateTime(timezone=True), nullable=False)
+    recorded_at = Column(DateTime(timezone=True), nullable=False)
 
     appearance = relationship("Appearance", back_populates="platform_price_histories")
     platform = relationship("Platform")
