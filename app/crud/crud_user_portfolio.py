@@ -179,7 +179,13 @@ def _get_price_histories_batch(
     )
 
     price_history_data = (
-        db.query(price_history_subquery, models.Platform)
+        db.query(
+            price_history_subquery.c.appearance_id,
+            price_history_subquery.c.lowest_price_cents,
+            price_history_subquery.c.quantity_on_sale,
+            price_history_subquery.c.recorded_at,
+            models.Platform
+        )
         .join(models.Platform, price_history_subquery.c.platform_id == models.Platform.id)
         .filter(price_history_subquery.c.rn <= limit)
         .order_by(
@@ -190,13 +196,13 @@ def _get_price_histories_batch(
     )
 
     price_histories_map = defaultdict(list)
-    for row, platform_obj in price_history_data:
-        price_histories_map[row.appearance_id].append(
+    for appearance_id, lowest_price_cents, quantity_on_sale, recorded_at, platform_obj in price_history_data:
+        price_histories_map[appearance_id].append(
             schemas.PlatformPriceHistoryPoint(
                 platform=schemas.Platform.model_validate(platform_obj),
-                lowest_price_cents=row.lowest_price_cents,
-                quantity_on_sale=row.quantity_on_sale,
-                recorded_at=row.recorded_at,
+                lowest_price_cents=lowest_price_cents,
+                quantity_on_sale=quantity_on_sale,
+                recorded_at=recorded_at,
             )
         )
 
